@@ -130,6 +130,14 @@ jobs:
         pwd
         ls -la *.py
         
+        # 測試 Python 腳本是否能執行 / Test if Python script can run
+        echo "🧪 Testing Python script execution"
+        python tlsh_text_analyzer.py --help || echo "Python script failed to run"
+        
+        # 檢查 Python 依賴 / Check Python dependencies  
+        echo "🔍 Checking Python dependencies"
+        python -c "import tlsh; print('tlsh-python installed successfully')" || echo "⚠️ tlsh-python not available"
+        
         # 執行跨平台測試 / Run cross-platform tests
         python -m pytest test_cross_platform.py -v --tb=short --durations=5
         
