@@ -93,7 +93,7 @@ def main():
     try:
         if args.example:
             result = reverser.run_example()
-        elif args.text:
+        elif args.text is not None:  # Allow empty string
             result = reverser.reverse_string(args.text)
         else:
             print("錯誤：需要 --text 參數，或使用 --example")

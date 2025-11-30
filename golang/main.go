@@ -100,6 +100,8 @@ func main() {
 		exampleFlag = flag.Bool("example", false, "執行內建範例 / Run built-in example")
 		textFlag    = flag.String("text", "", "要反轉的字串 / String to reverse")
 	)
+	
+	var textProvided bool
 
 	// 自訂使用說明 / Custom usage message
 	flag.Usage = func() {
@@ -112,6 +114,13 @@ func main() {
 	}
 
 	flag.Parse()
+	
+	// Check if -text flag was explicitly provided
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "text" {
+			textProvided = true
+		}
+	})
 
 	reverser := &StringReverser{
 		Verbose: *verboseFlag,
@@ -121,7 +130,8 @@ func main() {
 
 	if *exampleFlag {
 		result = reverser.runExample()
-	} else if *textFlag != "" {
+	} else if textProvided {
+		// -text flag was explicitly provided, allow empty string
 		result = reverser.reverseString(*textFlag)
 	} else {
 		fmt.Fprintf(os.Stderr, "錯誤：需要 -text 參數，或使用 -example\n")
