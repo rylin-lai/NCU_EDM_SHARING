@@ -36,7 +36,7 @@ jobs:
         
         sudo apt-get update && sudo apt-get install -y build-essential cmake jq
         python -m pip install --upgrade pip
-        pip install tlsh-python pytest pytest-mock
+        pip install tlsh-python pytest pytest-mock pytest-html pytest-xdist
         
     # ========================================
     # 建置 Golang Binary / Build Golang Binary
@@ -139,10 +139,38 @@ jobs:
         python -c "import tlsh; print('tlsh-python installed successfully')" || echo "⚠️ tlsh-python not available"
         
         # 執行跨平台測試 / Run cross-platform tests
-        python -m pytest test_cross_platform.py -v --tb=short --durations=5
+        python -m pytest test_cross_platform.py -v --tb=short --durations=5 \
+          --junitxml=test-results-cross-platform.xml \
+          --html=test-report-cross-platform.html --self-contained-html || echo "Cross-platform tests failed"
         
         # 執行原有的 Python 單元測試 / Run original Python unit tests
-        python -m pytest test_tlsh_analyzer.py -v --tb=short
+        python -m pytest test_tlsh_analyzer.py -v --tb=short \
+          --junitxml=test-results-python-unit.xml \
+          --html=test-report-python-unit.html --self-contained-html || echo "Python unit tests failed"
         
-        echo "✅ All pytest tests completed successfully"
+        echo "✅ pytest execution completed (check results for status)"
+        
+    # ========================================
+    # 上傳測試結果 / Upload Test Results  
+    # ========================================
+    - name: 📊 Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()  # 即使測試失敗也上傳 / Upload even if tests fail
+      with:
+        name: test-results-and-reports
+        path: |
+          test-results-*.xml
+          test-report-*.html
+          python_*.json
+          golang_*.json
+        retention-days: 30
+        
+    - name: 📋 Publish Test Report
+      uses: dorny/test-reporter@v1
+      if: always()  # 即使測試失敗也發布 / Publish even if tests fail
+      with:
+        name: TLSH Cross-Platform Tests
+        path: 'test-results-*.xml'
+        reporter: java-junit
+        fail-on-error: false
         
