@@ -1,6 +1,6 @@
 module tlsh-analyzer
 
-go 1.21
+go 1.20
 
 // TLSH 分析器 Golang 模組
 // TLSH Analyzer Golang Module
