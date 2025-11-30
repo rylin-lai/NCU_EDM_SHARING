@@ -31,35 +31,19 @@ class TestStringReverser:
         
         # 檢查 Golang binary 是否存在 / Check if Golang binary exists
         golang_dir = Path("golang")
+        golang_binary = golang_dir / "string-reverser"
+        
         if not golang_dir.exists():
             pytest.skip("Golang directory not found: golang/")
+        
+        if not golang_binary.exists():
+            pytest.skip(f"Golang binary not found: {golang_binary}. Please build it first with 'cd golang && go build -o string-reverser'")
             
         return {
             "python_script": str(python_script),
-            "golang_dir": str(golang_dir)
+            "golang_binary": str(golang_binary)
         }
     
-    def build_golang_binary(self, golang_dir: str) -> str:
-        """建置 Golang binary / Build Golang binary"""
-        binary_name = "string-reverser"
-        binary_path = os.path.join(golang_dir, binary_name)
-        
-        # 建置 binary / Build binary
-        cmd = ["go", "build", "-o", binary_name, "main.go"]
-        try:
-            result = subprocess.run(
-                cmd,
-                cwd=golang_dir,
-                capture_output=True,
-                text=True,
-                timeout=30,
-                check=True
-            )
-            return binary_path
-        except subprocess.CalledProcessError as e:
-            pytest.fail(f"Failed to build Golang binary: {e.stderr}")
-        except subprocess.TimeoutExpired:
-            pytest.fail("Golang build timeout")
     
     def run_python_reverser(self, script_path: str, *args) -> dict:
         """
@@ -126,10 +110,7 @@ class TestStringReverser:
     def test_both_implementations_example(self, setup_environment):
         """測試兩個實作的內建範例 / Test built-in example of both implementations"""
         python_script = setup_environment["python_script"]
-        golang_dir = setup_environment["golang_dir"]
-        
-        # 建置 Golang binary / Build Golang binary
-        golang_binary = self.build_golang_binary(golang_dir)
+        golang_binary = setup_environment["golang_binary"]
         
         try:
             # 執行 Python 版本 / Run Python version
@@ -166,9 +147,8 @@ class TestStringReverser:
             print(f"✅ Both implementations produced identical results")
             
         finally:
-            # 清理 / Cleanup
+            # 清理測試檔案 / Cleanup test files
             try:
-                os.remove(golang_binary)
                 os.remove("python_example.json")
                 os.remove("golang_example.json")
             except FileNotFoundError:
@@ -177,10 +157,7 @@ class TestStringReverser:
     def test_both_implementations_custom_text(self, setup_environment):
         """測試兩個實作的自訂文字 / Test custom text of both implementations"""
         python_script = setup_environment["python_script"]
-        golang_dir = setup_environment["golang_dir"]
-        
-        # 建置 Golang binary / Build Golang binary
-        golang_binary = self.build_golang_binary(golang_dir)
+        golang_binary = setup_environment["golang_binary"]
         
         test_text = "Python與Golang測試123"
         
@@ -213,9 +190,8 @@ class TestStringReverser:
             print(f"📊 Character counts match between implementations")
             
         finally:
-            # 清理 / Cleanup
+            # 清理測試檔案 / Cleanup test files
             try:
-                os.remove(golang_binary)
                 os.remove("python_custom.json")
                 os.remove("golang_custom.json")
             except FileNotFoundError:
@@ -224,10 +200,7 @@ class TestStringReverser:
     def test_both_implementations_palindrome(self, setup_environment):
         """測試兩個實作處理回文的情況 / Test both implementations with palindrome"""
         python_script = setup_environment["python_script"]
-        golang_dir = setup_environment["golang_dir"]
-        
-        # 建置 Golang binary / Build Golang binary
-        golang_binary = self.build_golang_binary(golang_dir)
+        golang_binary = setup_environment["golang_binary"]
         
         palindrome_text = "A man a plan a canal Panama"
         
@@ -257,9 +230,8 @@ class TestStringReverser:
             print(f"✅ Both implementations correctly identified palindrome")
             
         finally:
-            # 清理 / Cleanup
+            # 清理測試檔案 / Cleanup test files
             try:
-                os.remove(golang_binary)
                 os.remove("python_palindrome.json")
                 os.remove("golang_palindrome.json")
             except FileNotFoundError:
@@ -268,10 +240,7 @@ class TestStringReverser:
     def test_both_implementations_empty_string(self, setup_environment):
         """測試兩個實作處理空字串 / Test both implementations with empty string"""
         python_script = setup_environment["python_script"]
-        golang_dir = setup_environment["golang_dir"]
-        
-        # 建置 Golang binary / Build Golang binary
-        golang_binary = self.build_golang_binary(golang_dir)
+        golang_binary = setup_environment["golang_binary"]
         
         empty_text = ""
         
@@ -305,11 +274,8 @@ class TestStringReverser:
             print(f"\n✅ Both implementations correctly handled empty string")
             
         finally:
-            # 清理 / Cleanup
-            try:
-                os.remove(golang_binary)
-            except FileNotFoundError:
-                pass
+            # 不需要清理檔案，因為沒有輸出檔案 / No files to cleanup since no output files
+            pass
 
 
 if __name__ == "__main__":

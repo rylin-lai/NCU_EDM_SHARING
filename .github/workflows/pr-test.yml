@@ -71,6 +71,14 @@ jobs:
         # 檢查 Go 環境 / Check Go environment  
         go version
         
+        # 建置 Golang binary / Build Golang binary
+        echo "🔧 Building Golang binary"
+        cd golang
+        go mod tidy
+        go build -o string-reverser
+        ls -la string-reverser
+        cd ..
+        
         # 測試 Python 腳本是否能執行 / Test if Python script can run
         echo "🧪 Testing Python script execution"
         python string_reverser.py --help || echo "Python script failed to run"
