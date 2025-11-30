@@ -69,11 +69,3 @@ jobs:
         
         echo "✅ All pytest tests completed successfully"
         
-    - name: 📎 Upload Test Results  
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: cross-platform-test-results
-        path: |
-          workshop_materials/golang/tlsh-text-analyzer-linux
-          workshop_materials/*.json
