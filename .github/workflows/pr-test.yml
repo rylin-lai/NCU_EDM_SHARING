@@ -105,13 +105,3 @@ jobs:
           python_*.json
           golang_*.json
         retention-days: 30
-        
-    - name: 📋 Publish Test Report
-      uses: dorny/test-reporter@v1
-      if: always()  # 即使測試失敗也發布 / Publish even if tests fail
-      with:
-        name: String Reverser Cross-Platform Tests
-        path: 'test-results-*.xml'
-        reporter: java-junit
-        fail-on-error: false
-        
