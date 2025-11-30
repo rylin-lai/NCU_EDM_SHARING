@@ -1,0 +1,356 @@
+name: TLSH Analyzer Test Suite
+# TLSH 分析器測試套件
+
+on:
+  pull_request:
+    branches: "*"
+    paths:
+      - '**.py'
+      - '**.go'
+      - 'golang/**'
+      - 'pylib/**'
+      - 'test_*.py'
+      - '.github/workflows/**'
+  push:
+    branches:  "*"
+    paths:
+      - '**.py'
+      - '**.go'
+      - 'golang/**'
+      - 'pylib/**'
+      - 'test_*.py'
+      - '.github/workflows/**'
+
+jobs:
+  test-python:
+    name: Test Python Implementation
+    # 測試 Python 實作
+    runs-on: ubuntu-20.04
+    
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, "3.10", "3.11"]
+    
+    steps:
+    - name: Checkout code / 檢出程式碼
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install system dependencies / 安裝系統依賴
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+        
+    - name: Install Python dependencies / 安裝 Python 依賴
+      run: |
+        python -m pip install --upgrade pip
+        pip install tlsh-python numpy pandas matplotlib pytest
+        # 安裝測試所需的額外套件 / Install additional packages for testing
+        pip install pytest-mock pytest-cov
+        
+    - name: Test Python simple text analyzer / 測試 Python 簡化版文字分析器
+      working-directory: ./workshop_materials
+      run: |
+        echo "🐍 Testing Python simple text analyzer / 測試 Python 簡化版文字分析器"
+        
+        # 測試內建範例 / Test built-in example
+        python tlsh_text_analyzer.py --example --verbose
+        
+        # 測試自訂文字比較 / Test custom text comparison
+        python tlsh_text_analyzer.py \
+          --text1="這是第一個測試文字，用來檢驗 TLSH 功能是否正常運作。此文字包含足夠的字元數量以滿足 TLSH 最小長度要求。" \
+          --text2="這是第二個測試文字，用來檢驗 TLSH 功能是否正常運作！此文字包含足夠的字元數量以滿足 TLSH 最小長度要求。" \
+          --verbose
+          
+        # 測試 JSON 輸出 / Test JSON output
+        python tlsh_text_analyzer.py --example --output test_result.json
+        ls -la test_result.json
+        cat test_result.json
+        
+    - name: Run pytest tests / 執行 pytest 測試
+      working-directory: ./workshop_materials
+      run: |
+        echo "🧪 Running pytest tests / 執行 pytest 測試"
+        
+        # 執行所有測試並產生覆蓋率報告 / Run all tests with coverage report
+        python -m pytest test_tlsh_analyzer.py -v --tb=short --cov=tlsh_text_analyzer --cov-report=term-missing
+        
+        # 執行特定測試類別 / Run specific test classes
+        python -m pytest test_tlsh_analyzer.py::TestTLSHAnalyzer -v
+        
+    - name: Test Python full analyzer (pylib) / 測試 Python 完整版分析器
+      working-directory: ./workshop_materials
+      run: |
+        echo "🔬 Testing Python full analyzer / 測試 Python 完整版分析器"
+        
+        # 測試 pylib 中的完整版分析器 / Test full analyzer in pylib
+        cd pylib
+        python tlsh_analyzer.py case1 --example --verbose
+        
+    - name: Upload test results / 上傳測試結果
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-test-results-${{ matrix.python-version }}
+        path: |
+          workshop_materials/test_result.json
+          workshop_materials/pytest.log
+
+  test-golang:
+    name: Test Golang Implementation
+    # 測試 Golang 實作
+    runs-on: ubuntu-20.04
+    
+    strategy:
+      matrix:
+        go-version: [1.19, "1.20", 1.21]
+    
+    steps:
+    - name: Checkout code / 檢出程式碼
+      uses: actions/checkout@v4
+      
+    - name: Set up Go ${{ matrix.go-version }}
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ matrix.go-version }}
+        
+    - name: Build Golang binary / 建置 Golang binary
+      working-directory: ./workshop_materials/golang
+      run: |
+        echo "🔧 Building Golang binary / 建置 Golang binary"
+        
+        # 檢查 Go 版本 / Check Go version
+        go version
+        
+        # 下載依賴 / Download dependencies
+        go mod tidy
+        
+        # 建置 Linux binary / Build Linux binary
+        GOOS=linux GOARCH=amd64 go build -o tlsh-text-analyzer-linux main.go
+        
+        # 檢查建置結果 / Check build result
+        ls -la tlsh-text-analyzer-linux
+        file tlsh-text-analyzer-linux
+        
+    - name: Test Golang binary / 測試 Golang binary
+      working-directory: ./workshop_materials/golang
+      run: |
+        echo "🚀 Testing Golang binary / 測試 Golang binary"
+        
+        # 測試說明文件 / Test help documentation
+        ./tlsh-text-analyzer-linux -help
+        
+        # 測試內建範例 / Test built-in example
+        ./tlsh-text-analyzer-linux -example -verbose
+        
+        # 測試自訂文字比較 / Test custom text comparison
+        ./tlsh-text-analyzer-linux \
+          -text1="這是第一個測試文字，用來檢驗 TLSH 功能是否正常運作。此文字包含足夠的字元數量以滿足 TLSH 最小長度要求。" \
+          -text2="這是第二個測試文字，用來檢驗 TLSH 功能是否正常運作！此文字包含足夠的字元數量以滿足 TLSH 最小長度要求。" \
+          -verbose
+          
+        # 測試 JSON 輸出 / Test JSON output
+        ./tlsh-text-analyzer-linux -example -output golang_result.json -verbose
+        ls -la golang_result.json
+        cat golang_result.json
+        
+    - name: Upload Golang artifacts / 上傳 Golang 產物
+      uses: actions/upload-artifact@v3
+      with:
+        name: golang-binary-${{ matrix.go-version }}
+        path: |
+          workshop_materials/golang/tlsh-text-analyzer-linux
+          workshop_materials/golang/golang_result.json
+
+  cross-validation:
+    name: Cross-language Validation
+    # 跨語言驗證
+    needs: [test-python, test-golang]
+    runs-on: ubuntu-20.04
+    
+    steps:
+    - name: Checkout code / 檢出程式碼
+      uses: actions/checkout@v4
+      
+    - name: Set up Python / 設置 Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+        
+    - name: Set up Go / 設置 Go  
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.20"
+        
+    - name: Install dependencies / 安裝依賴
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake jq
+        python -m pip install --upgrade pip
+        pip install tlsh-python
+        
+    - name: Build Golang binary / 建置 Golang binary
+      working-directory: ./workshop_materials/golang
+      run: |
+        go mod tidy
+        GOOS=linux GOARCH=amd64 go build -o tlsh-text-analyzer-linux main.go
+        
+    - name: Cross-language comparison test / 跨語言比較測試
+      working-directory: ./workshop_materials
+      run: |
+        echo "🔄 Cross-language comparison test / 跨語言比較測試"
+        
+        # 定義測試文字 / Define test texts
+        TEST_TEXT1="這是一個跨語言測試文字，用來驗證 Python 和 Golang 版本的 TLSH 實作是否產生一致的結果。此文字包含足夠的字元數量以滿足 TLSH 最小長度要求，並且包含中文字符以測試 UTF-8 編碼處理。"
+        TEST_TEXT2="這是一個跨語言測試文字，用來驗證 Python 和 Golang 版本的 TLSH 實作是否產生一致的結果！此文字包含足夠的字元數量以滿足 TLSH 最小長度要求，並且包含中文字符以測試 UTF-8 編碼處理。"
+        
+        # 執行 Python 版本 / Run Python version
+        echo "執行 Python 版本 / Running Python version"
+        python tlsh_text_analyzer.py \
+          --text1="$TEST_TEXT1" \
+          --text2="$TEST_TEXT2" \
+          --output python_cross_test.json
+          
+        # 執行 Golang 版本 / Run Golang version
+        echo "執行 Golang 版本 / Running Golang version"  
+        ./golang/tlsh-text-analyzer-linux \
+          -text1="$TEST_TEXT1" \
+          -text2="$TEST_TEXT2" \
+          -output golang_cross_test.json
+          
+        # 比較結果 / Compare results
+        echo "🔍 Comparing results / 比較結果"
+        echo "Python result / Python 結果:"
+        cat python_cross_test.json | jq '.'
+        echo ""
+        echo "Golang result / Golang 結果:"
+        cat golang_cross_test.json | jq '.'
+        
+        # 提取距離值進行比較 / Extract distance values for comparison
+        PYTHON_DISTANCE=$(cat python_cross_test.json | jq '.distance')
+        GOLANG_DISTANCE=$(cat golang_cross_test.json | jq '.distance')
+        
+        echo ""
+        echo "Distance comparison / 距離比較:"
+        echo "Python distance: $PYTHON_DISTANCE"
+        echo "Golang distance: $GOLANG_DISTANCE"
+        
+        # 檢查距離是否接近（允許小幅差異）/ Check if distances are close (allow small differences)
+        if [ "$PYTHON_DISTANCE" -eq "$GOLANG_DISTANCE" ]; then
+          echo "✅ Perfect match! / 完美匹配！"
+        else
+          # 計算差異百分比 / Calculate difference percentage
+          DIFF=$(echo "scale=2; ($PYTHON_DISTANCE - $GOLANG_DISTANCE) / $PYTHON_DISTANCE * 100" | bc -l || echo "0")
+          echo "Difference: $DIFF%"
+          
+          # 如果差異小於10%則認為可接受 / Accept if difference is less than 10%
+          if (( $(echo "$DIFF < 10" | bc -l) )); then
+            echo "✅ Acceptable difference (< 10%) / 可接受的差異 (< 10%)"
+          else
+            echo "❌ Significant difference detected / 檢測到顯著差異"
+            exit 1
+          fi
+        fi
+        
+    - name: Upload cross-validation results / 上傳跨語言驗證結果
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: cross-validation-results
+        path: |
+          workshop_materials/python_cross_test.json
+          workshop_materials/golang_cross_test.json
+
+  performance-benchmark:
+    name: Performance Benchmark
+    # 效能基準測試
+    needs: [test-python, test-golang]
+    runs-on: ubuntu-20.04
+    
+    steps:
+    - name: Checkout code / 檢出程式碼
+      uses: actions/checkout@v4
+      
+    - name: Set up Python / 設置 Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+        
+    - name: Set up Go / 設置 Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.20"
+        
+    - name: Install dependencies / 安裝依賴
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake time
+        python -m pip install --upgrade pip
+        pip install tlsh-python
+        
+    - name: Build Golang binary / 建置 Golang binary
+      working-directory: ./workshop_materials/golang
+      run: |
+        go mod tidy
+        GOOS=linux GOARCH=amd64 go build -o tlsh-text-analyzer-linux main.go
+        
+    - name: Performance benchmark / 效能基準測試
+      working-directory: ./workshop_materials
+      run: |
+        echo "⚡ Performance benchmark / 效能基準測試"
+        
+        # 建立測試文字 / Create test text
+        TEST_TEXT="$(for i in {1..100}; do echo "這是一個效能測試文字，重複內容用來測試 TLSH 計算效能。包含中文字符以測試 UTF-8 編碼處理效能。"; done)"
+        
+        echo "Text length: ${#TEST_TEXT} characters / 文字長度：${#TEST_TEXT} 字符"
+        echo ""
+        
+        # Python 效能測試 / Python performance test
+        echo "🐍 Python performance test / Python 效能測試"
+        /usr/bin/time -v python tlsh_text_analyzer.py \
+          --text1="$TEST_TEXT" \
+          --text2="$TEST_TEXT 修改版" \
+          2>&1 | grep -E "(Elapsed|Maximum|User|System)"
+          
+        echo ""
+        
+        # Golang 效能測試 / Golang performance test  
+        echo "🚀 Golang performance test / Golang 效能測試"
+        /usr/bin/time -v ./golang/tlsh-text-analyzer-linux \
+          -text1="$TEST_TEXT" \
+          -text2="$TEST_TEXT 修改版" \
+          2>&1 | grep -E "(Elapsed|Maximum|User|System)"
+
+  summary:
+    name: Test Summary
+    # 測試摘要
+    needs: [test-python, test-golang, cross-validation, performance-benchmark]
+    runs-on: ubuntu-20.04
+    if: always()
+    
+    steps:
+    - name: Test Summary / 測試摘要
+      run: |
+        echo "📊 TLSH Analyzer Test Summary / TLSH 分析器測試摘要"
+        echo "========================================="
+        echo ""
+        
+        # 檢查各個 job 的狀態 / Check status of each job
+        echo "Job Results / 作業結果:"
+        echo "• Python Tests: ${{ needs.test-python.result }}"
+        echo "• Golang Tests: ${{ needs.test-golang.result }}"  
+        echo "• Cross Validation: ${{ needs.cross-validation.result }}"
+        echo "• Performance Benchmark: ${{ needs.performance-benchmark.result }}"
+        echo ""
+        
+        if [[ "${{ needs.test-python.result }}" == "success" && "${{ needs.test-golang.result }}" == "success" && "${{ needs.cross-validation.result }}" == "success" ]]; then
+          echo "✅ All core tests passed! / 所有核心測試通過！"
+          echo "🎉 TLSH Analyzer is ready for merge / TLSH 分析器準備好合併"
+        else
+          echo "❌ Some tests failed / 部分測試失敗"
+          echo "Please check the individual job logs / 請檢查各個作業的日誌"
+        fi
