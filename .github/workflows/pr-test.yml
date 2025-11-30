@@ -1,5 +1,5 @@
-name: PR Test - Python & Golang
-# PR 測試 - Python 和 Golang
+name: String Reverser Test - Python & Golang
+# 字串反轉器測試 - Python 和 Golang
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   test:
-    name: Test TLSH Analyzer
+    name: Test String Reverser
     runs-on: ubuntu-latest
     
     steps:
@@ -34,92 +34,29 @@ jobs:
         echo "🔍 Looking for workshop_materials directory"
         find . -name "workshop_materials" -type d | head -5
         
-        sudo apt-get update && sudo apt-get install -y build-essential cmake jq
+        sudo apt-get update && sudo apt-get install -y build-essential jq
         python -m pip install --upgrade pip
-        pip install tlsh-python pytest pytest-mock pytest-html pytest-xdist
+        pip install pytest pytest-mock pytest-html pytest-xdist
         
     # ========================================
-    # 建置 Golang Binary / Build Golang Binary
+    # 測試 Python 和 Golang 字串反轉器 / Test Python and Golang String Reverser
     # ========================================
-    - name: 🔧 Build Golang Binary
+    - name: 🧪 Test String Reverser Cross-Platform
       run: |
-        echo "🔧 Building Golang TLSH Text Analyzer"
-        echo "===================================="
-        
-        # 檢查並進入正確的目錄 / Check and navigate to correct directory
-        echo "Current directory: $(pwd)"
-        echo "Looking for golang directory:"
-        find . -name "golang" -type d | head -5
-        
-        # 嘗試不同的路徑，優先找有 main.go 的目錄 / Try different paths, prioritize directories with main.go
-        if [ -f "workshop_materials/golang/main.go" ]; then
-          cd workshop_materials/golang
-          echo "✅ Found golang directory with main.go at workshop_materials/golang"
-        elif [ -f "./golang/main.go" ]; then
-          cd ./golang  
-          echo "✅ Found golang directory with main.go at ./golang"
-        elif [ -f "golang/main.go" ]; then
-          cd golang
-          echo "✅ Found golang directory with main.go at golang"
-        elif [ -d "workshop_materials/golang" ]; then
-          cd workshop_materials/golang
-          echo "⚠️  Found golang directory at workshop_materials/golang (no main.go)"
-        elif [ -d "./golang" ]; then
-          cd ./golang  
-          echo "⚠️  Found golang directory at ./golang (no main.go)"
-        elif [ -d "golang" ]; then
-          cd golang
-          echo "⚠️  Found golang directory at golang (no main.go)"
-        else
-          echo "❌ Cannot find golang directory"
-          find . -name "*.go" | head -10
-          exit 1
-        fi
-        
-        # 檢查 Go 環境 / Check Go environment  
-        go version
-        pwd
-        ls -la
-        
-        # 建置 binary / Build binary
-        if [ -f "main.go" ]; then
-          echo "✅ Found main.go, building from source"
-          go mod tidy
-          GOOS=linux GOARCH=amd64 go build -o tlsh-text-analyzer-linux main.go
-          ls -la tlsh-text-analyzer-linux
-          chmod +x tlsh-text-analyzer-linux
-        elif [ -f "tlsh-text-analyzer-linux" ]; then
-          echo "⚠️  Using existing binary tlsh-text-analyzer-linux"
-          chmod +x tlsh-text-analyzer-linux
-          ls -la tlsh-text-analyzer-linux
-        else
-          echo "❌ Neither main.go nor tlsh-text-analyzer-linux found"
-          echo "Available files:"
-          ls -la
-          exit 1
-        fi
-        
-        echo "✅ Golang binary built successfully"
-        
-    # ========================================
-    # 跨平台 pytest 測試 / Cross-platform pytest Tests
-    # ========================================
-    - name: 🧪 Run Cross-platform pytest Tests
-      run: |
-        echo "🧪 Running Cross-platform pytest Tests"
-        echo "======================================="
+        echo "🧪 Testing String Reverser Cross-Platform"
+        echo "========================================"
         
         # 檢查並進入正確的目錄 / Check and navigate to correct directory
         echo "Current directory: $(pwd)"
         echo "Looking for test files:"
-        find . -name "test_cross_platform.py" | head -5
-        find . -name "test_tlsh_analyzer.py" | head -5
+        find . -name "test_string_reverser.py" | head -5
+        find . -name "string_reverser.py" | head -5
         
         # 嘗試不同的路徑 / Try different paths
         if [ -d "workshop_materials" ]; then
           cd workshop_materials
           echo "✅ Found workshop_materials directory"
-        elif [ -f "./test_cross_platform.py" ]; then
+        elif [ -f "./test_string_reverser.py" ]; then
           echo "✅ Test files found in current directory"
         else
           echo "❌ Cannot find test files"
@@ -128,27 +65,23 @@ jobs:
         fi
         
         pwd
-        ls -la *.py
+        ls -la *.py 2>/dev/null || echo "No Python files found"
+        ls -la golang/ 2>/dev/null || echo "No golang directory found"
+        
+        # 檢查 Go 環境 / Check Go environment  
+        go version
         
         # 測試 Python 腳本是否能執行 / Test if Python script can run
         echo "🧪 Testing Python script execution"
-        python tlsh_text_analyzer.py --help || echo "Python script failed to run"
-        
-        # 檢查 Python 依賴 / Check Python dependencies  
-        echo "🔍 Checking Python dependencies"
-        python -c "import tlsh; print('tlsh-python installed successfully')" || echo "⚠️ tlsh-python not available"
+        python string_reverser.py --help || echo "Python script failed to run"
         
         # 執行跨平台測試 / Run cross-platform tests
-        python -m pytest test_cross_platform.py -v --tb=short --durations=5 \
-          --junitxml=test-results-cross-platform.xml \
-          --html=test-report-cross-platform.html --self-contained-html || echo "Cross-platform tests failed"
+        echo "🚀 Running pytest cross-platform tests"
+        python -m pytest test_string_reverser.py -v --tb=short --durations=5 \
+          --junitxml=test-results-string-reverser.xml \
+          --html=test-report-string-reverser.html --self-contained-html
         
-        # 執行原有的 Python 單元測試 / Run original Python unit tests
-        python -m pytest test_tlsh_analyzer.py -v --tb=short \
-          --junitxml=test-results-python-unit.xml \
-          --html=test-report-python-unit.html --self-contained-html || echo "Python unit tests failed"
-        
-        echo "✅ pytest execution completed (check results for status)"
+        echo "✅ String reverser tests completed"
         
     # ========================================
     # 上傳測試結果 / Upload Test Results  
@@ -157,7 +90,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()  # 即使測試失敗也上傳 / Upload even if tests fail
       with:
-        name: test-results-and-reports
+        name: string-reverser-test-results
         path: |
           test-results-*.xml
           test-report-*.html
@@ -169,7 +102,7 @@ jobs:
       uses: dorny/test-reporter@v1
       if: always()  # 即使測試失敗也發布 / Publish even if tests fail
       with:
-        name: TLSH Cross-Platform Tests
+        name: String Reverser Cross-Platform Tests
         path: 'test-results-*.xml'
         reporter: java-junit
         fail-on-error: false
