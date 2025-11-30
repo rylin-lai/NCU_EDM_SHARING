@@ -51,16 +51,25 @@ jobs:
         echo "Looking for golang directory:"
         find . -name "golang" -type d | head -5
         
-        # 嘗試不同的路徑 / Try different paths
-        if [ -d "workshop_materials/golang" ]; then
+        # 嘗試不同的路徑，優先找有 main.go 的目錄 / Try different paths, prioritize directories with main.go
+        if [ -f "workshop_materials/golang/main.go" ]; then
           cd workshop_materials/golang
-          echo "✅ Found golang directory at workshop_materials/golang"
+          echo "✅ Found golang directory with main.go at workshop_materials/golang"
+        elif [ -f "./golang/main.go" ]; then
+          cd ./golang  
+          echo "✅ Found golang directory with main.go at ./golang"
+        elif [ -f "golang/main.go" ]; then
+          cd golang
+          echo "✅ Found golang directory with main.go at golang"
+        elif [ -d "workshop_materials/golang" ]; then
+          cd workshop_materials/golang
+          echo "⚠️  Found golang directory at workshop_materials/golang (no main.go)"
         elif [ -d "./golang" ]; then
           cd ./golang  
-          echo "✅ Found golang directory at ./golang"
+          echo "⚠️  Found golang directory at ./golang (no main.go)"
         elif [ -d "golang" ]; then
           cd golang
-          echo "✅ Found golang directory at golang"
+          echo "⚠️  Found golang directory at golang (no main.go)"
         else
           echo "❌ Cannot find golang directory"
           find . -name "*.go" | head -10
@@ -73,10 +82,22 @@ jobs:
         ls -la
         
         # 建置 binary / Build binary
-        go mod tidy
-        GOOS=linux GOARCH=amd64 go build -o tlsh-text-analyzer-linux main.go
-        ls -la tlsh-text-analyzer-linux
-        chmod +x tlsh-text-analyzer-linux
+        if [ -f "main.go" ]; then
+          echo "✅ Found main.go, building from source"
+          go mod tidy
+          GOOS=linux GOARCH=amd64 go build -o tlsh-text-analyzer-linux main.go
+          ls -la tlsh-text-analyzer-linux
+          chmod +x tlsh-text-analyzer-linux
+        elif [ -f "tlsh-text-analyzer-linux" ]; then
+          echo "⚠️  Using existing binary tlsh-text-analyzer-linux"
+          chmod +x tlsh-text-analyzer-linux
+          ls -la tlsh-text-analyzer-linux
+        else
+          echo "❌ Neither main.go nor tlsh-text-analyzer-linux found"
+          echo "Available files:"
+          ls -la
+          exit 1
+        fi
         
         echo "✅ Golang binary built successfully"
         
