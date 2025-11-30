@@ -28,6 +28,12 @@ jobs:
         
     - name: Install dependencies / 安裝依賴
       run: |
+        echo "🔍 Checking repository structure"
+        pwd
+        ls -la
+        echo "🔍 Looking for workshop_materials directory"
+        find . -name "workshop_materials" -type d | head -5
+        
         sudo apt-get update && sudo apt-get install -y build-essential cmake jq
         python -m pip install --upgrade pip
         pip install tlsh-python pytest pytest-mock
@@ -36,13 +42,35 @@ jobs:
     # 建置 Golang Binary / Build Golang Binary
     # ========================================
     - name: 🔧 Build Golang Binary
-      working-directory: ./workshop_materials/golang
       run: |
         echo "🔧 Building Golang TLSH Text Analyzer"
         echo "===================================="
         
-        # 檢查 Go 環境 / Check Go environment
+        # 檢查並進入正確的目錄 / Check and navigate to correct directory
+        echo "Current directory: $(pwd)"
+        echo "Looking for golang directory:"
+        find . -name "golang" -type d | head -5
+        
+        # 嘗試不同的路徑 / Try different paths
+        if [ -d "workshop_materials/golang" ]; then
+          cd workshop_materials/golang
+          echo "✅ Found golang directory at workshop_materials/golang"
+        elif [ -d "./golang" ]; then
+          cd ./golang  
+          echo "✅ Found golang directory at ./golang"
+        elif [ -d "golang" ]; then
+          cd golang
+          echo "✅ Found golang directory at golang"
+        else
+          echo "❌ Cannot find golang directory"
+          find . -name "*.go" | head -10
+          exit 1
+        fi
+        
+        # 檢查 Go 環境 / Check Go environment  
         go version
+        pwd
+        ls -la
         
         # 建置 binary / Build binary
         go mod tidy
@@ -56,10 +84,30 @@ jobs:
     # 跨平台 pytest 測試 / Cross-platform pytest Tests
     # ========================================
     - name: 🧪 Run Cross-platform pytest Tests
-      working-directory: ./workshop_materials
       run: |
         echo "🧪 Running Cross-platform pytest Tests"
         echo "======================================="
+        
+        # 檢查並進入正確的目錄 / Check and navigate to correct directory
+        echo "Current directory: $(pwd)"
+        echo "Looking for test files:"
+        find . -name "test_cross_platform.py" | head -5
+        find . -name "test_tlsh_analyzer.py" | head -5
+        
+        # 嘗試不同的路徑 / Try different paths
+        if [ -d "workshop_materials" ]; then
+          cd workshop_materials
+          echo "✅ Found workshop_materials directory"
+        elif [ -f "./test_cross_platform.py" ]; then
+          echo "✅ Test files found in current directory"
+        else
+          echo "❌ Cannot find test files"
+          find . -name "*.py" | head -10
+          exit 1
+        fi
+        
+        pwd
+        ls -la *.py
         
         # 執行跨平台測試 / Run cross-platform tests
         python -m pytest test_cross_platform.py -v --tb=short --durations=5
