@@ -195,27 +195,28 @@ jobs:
       with:
         python-version: '3.11'
         
-    - name: 📥 Prepare working directory and checkout gh-pages
+    - name: 🏗️ Prepare HTML Report Before Branch Switch
       run: |
-        # Save the downloaded reports to a safe location
-        if [ -d "reports" ]; then
-          cp -r reports /tmp/reports-backup
-          echo "📦 Backed up reports to /tmp/reports-backup"
-        fi
+        # Create HTML report using create_pages_structure.py BEFORE switching branches
+        cd auto_ml_demo
+        python create_pages_structure.py
         
-        # Clean working directory before branch switch
+        # Copy all needed files to /tmp for later use
+        mkdir -p /tmp/deployment-files
+        cp -r public/* /tmp/deployment-files/
+        cp -r ../reports /tmp/deployment-files/ 2>/dev/null || echo "No reports directory"
+        
+        echo "📦 Prepared all deployment files in /tmp/deployment-files"
+        ls -la /tmp/deployment-files/
+        
+    - name: 📥 Switch to gh-pages and Deploy
+      run: |
+        # Clean working directory before branch switch  
         git clean -fd
-        rm -rf reports/ || true
         
         # Fetch or create gh-pages branch
         git fetch origin gh-pages:gh-pages 2>/dev/null || git checkout --orphan gh-pages
         git checkout gh-pages
-        
-        # Restore the reports
-        if [ -d "/tmp/reports-backup" ]; then
-          cp -r /tmp/reports-backup reports/
-          echo "📦 Restored reports from backup"
-        fi
         
         if [ ! -f "index.html" ]; then
           git rm -rf . 2>/dev/null || true
@@ -224,7 +225,7 @@ jobs:
           echo "📄 Using existing gh-pages branch"
         fi
         
-    - name: 🏗️ Create Simple HTML Report
+    - name: 🚀 Deploy Files to Target Directory
       env:
         DEPLOYMENT_PATH: ${{ needs.setup-deployment-info.outputs.deployment-path }}
         BRANCH_NAME: ${{ needs.setup-deployment-info.outputs.branch-name }}
@@ -247,25 +248,18 @@ jobs:
         # Create target directory
         mkdir -p "${TARGET_DIR}"
         
-        # Use existing create_pages_structure.py to generate comprehensive report
-        # First, checkout the original branch to get the script
-        git checkout ${{ needs.setup-deployment-info.outputs.branch-name }} -- auto_ml_demo/create_pages_structure.py
-        
-        # Copy the script to current directory
-        cp auto_ml_demo/create_pages_structure.py .
-        
-        # Run the script to create comprehensive HTML report
-        python create_pages_structure.py
-        
-        # Move generated report to target directory
-        if [ "${IS_MAIN_BRANCH}" = "true" ]; then
-          cp public/index.html .
+        # Copy the prepared files from /tmp to target directory
+        if [ -f "/tmp/deployment-files/index.html" ]; then
+          cp /tmp/deployment-files/index.html "${TARGET_DIR}/"
+          echo "✅ Deployed comprehensive ML report to ${TARGET_DIR}/"
         else
-          mkdir -p "branch-${BRANCH_NAME}"
-          cp public/index.html "branch-${BRANCH_NAME}/"
+          echo "⚠️ No prepared HTML file found, creating simple placeholder"
+          echo "<h1>🤖 Python ML Demo - ${BRANCH_NAME}</h1><p>Report deployment in progress...</p>" > "${TARGET_DIR}/index.html"
         fi
         
-        echo "✅ Created comprehensive ML report using create_pages_structure.py"
+        # List what we deployed
+        echo "📁 Deployed files:"
+        ls -la "${TARGET_DIR}/"
         
     - name: 📤 Commit and Push to gh-pages
       run: |
