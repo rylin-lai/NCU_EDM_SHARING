@@ -230,58 +230,22 @@ jobs:
         # Create target directory
         mkdir -p "${TARGET_DIR}"
         
-        # Create simple HTML report file
+        # Create simple HTML report using echo
         REPORT_FILE="${TARGET_DIR}/index.html"
-        
-        cat > "${REPORT_FILE}" << 'EOF'
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Python ML Demo</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0; padding: 20px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh; color: #333;
-        }
-        .container { 
-            max-width: 1000px; margin: 0 auto; 
-            background: white; border-radius: 15px; 
-            padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        .header { 
-            text-align: center; margin-bottom: 30px; 
-            padding: 20px; background: #f8f9fa; border-radius: 10px;
-        }
-        .status-badge { 
-            display: inline-block; padding: 5px 10px; 
-            background: #28a745; color: white; border-radius: 15px; 
-            font-size: 12px; font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 Python ML Demo</h1>
-            <span class="status-badge">✅ 部署成功</span>
-EOF
-        
-        echo "            <p>Branch: ${BRANCH_NAME}</p>" >> "${REPORT_FILE}"
-        
-        cat >> "${REPORT_FILE}" << 'EOF'
-        </div>
-        <div style="text-align: center; padding: 20px;">
-            <p>ML 分析報告已成功部署！</p>
-            <p>此為 Python 自動化工作流程展示</p>
-        </div>
-    </div>
-</body>
-</html>
-EOF
+        echo '<!DOCTYPE html>' > "${REPORT_FILE}"
+        echo '<html><head><meta charset="UTF-8"><title>Python ML Demo</title>' >> "${REPORT_FILE}"
+        echo '<style>body{font-family:Arial;margin:20px;background:#667eea;color:#333}' >> "${REPORT_FILE}"
+        echo '.container{max-width:800px;margin:0 auto;background:white;padding:30px;border-radius:10px}' >> "${REPORT_FILE}"
+        echo '.header{text-align:center;margin-bottom:30px;padding:20px;background:#f8f9fa}' >> "${REPORT_FILE}"
+        echo '.badge{background:#28a745;color:white;padding:5px 10px;border-radius:15px;font-size:12px}</style></head>' >> "${REPORT_FILE}"
+        echo '<body><div class="container"><div class="header">' >> "${REPORT_FILE}"
+        echo '<h1>🤖 Python ML Demo</h1>' >> "${REPORT_FILE}"
+        echo '<span class="badge">✅ 部署成功</span>' >> "${REPORT_FILE}"
+        echo "<p>Branch: ${BRANCH_NAME}</p>" >> "${REPORT_FILE}"
+        echo '</div><div style="text-align:center;padding:20px">' >> "${REPORT_FILE}"
+        echo '<p>ML 分析報告已成功部署！</p>' >> "${REPORT_FILE}"
+        echo '<p>此為 Python 自動化工作流程展示</p>' >> "${REPORT_FILE}"
+        echo '</div></div></body></html>' >> "${REPORT_FILE}"
         
         echo "✅ Created HTML report: ${REPORT_FILE}"
         
