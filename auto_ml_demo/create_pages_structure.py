@@ -10,200 +10,214 @@ from pathlib import Path
 from datetime import datetime
 
 def create_pages_structure():
-    """建立 GitHub Pages 的目錄結構和索引頁面"""
+    """建立簡單的單頁 GitHub Pages 結構"""
     
     # 建立目錄結構
     public_dir = Path("public")
     public_dir.mkdir(exist_ok=True)
     
-    plots_dir = public_dir / "plots"
-    plots_dir.mkdir(exist_ok=True)
+    # 尋找報表文件 - 檢查多個可能路徑
+    reports_found = False
+    summary_data = {}
     
-    # 複製報表檔案
-    reports_dir = Path("reports")
-    if reports_dir.exists():
-        for item in reports_dir.iterdir():
-            if item.is_file():
-                shutil.copy2(item, public_dir)
-            elif item.is_dir() and item.name == "plots":
-                for plot in item.iterdir():
-                    if plot.suffix in ['.png', '.jpg', '.svg']:
-                        shutil.copy2(plot, plots_dir)
+    # 可能的報表路徑
+    possible_paths = [
+        Path("reports"),
+        Path("../reports"), 
+        Path("auto_ml_demo/reports"),
+        Path("./reports")
+    ]
     
-    # 建立主索引頁面
-    create_main_index(public_dir)
+    for reports_dir in possible_paths:
+        if reports_dir.exists():
+            print(f"📁 Found reports directory: {reports_dir}")
+            reports_found = True
+            
+            # 讀取分析摘要
+            summary_file = reports_dir / "analysis_summary.json"
+            if summary_file.exists():
+                try:
+                    import json
+                    with open(summary_file, 'r', encoding='utf-8') as f:
+                        summary_data = json.load(f)
+                    print(f"📊 Loaded analysis summary")
+                except Exception as e:
+                    print(f"⚠️ Could not load summary: {e}")
+            break
     
-    # 建立圖表索引頁面
-    create_plots_index(plots_dir)
+    if not reports_found:
+        print("⚠️ No reports directory found, creating placeholder")
     
-    print(f"✅ GitHub Pages structure created in {public_dir}")
+    # 建立簡單的單頁報告
+    create_simple_single_page(public_dir, summary_data)
+    
+    print(f"✅ Simple single-page GitHub Pages created in {public_dir}")
 
-def create_main_index(public_dir):
-    """建立主索引頁面"""
+def create_simple_single_page(public_dir, summary_data):
+    """創建簡單的單頁報告"""
     
-    index_html = f'''<!DOCTYPE html>
+    # 提取關鍵數據
+    dataset_info = summary_data.get('dataset_info', {})
+    best_model = summary_data.get('best_classification_model', {})
+    clustering_info = summary_data.get('clustering_summary', {})
+    generation_time = summary_data.get('generated_at', datetime.now().isoformat())
+    
+    # 格式化數據
+    dataset_shape = dataset_info.get('shape', 'Unknown')
+    best_model_name = best_model.get('name', 'Unknown') if best_model else 'Unknown'
+    best_f1_score = best_model.get('f1_score', 0) if best_model else 0
+    best_accuracy = best_model.get('accuracy', 0) if best_model else 0
+    
+    # 簡化的單頁HTML
+    simple_html = f'''<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 Automated ML Analysis Dashboard</title>
+    <title>🤖 Python ML 自動化展示 / Automated ML Demo</title>
     <style>
         body {{ 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             margin: 0; padding: 20px; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            min-height: 100vh; color: #333;
         }}
         .container {{ 
-            max-width: 1200px; margin: 0 auto; 
+            max-width: 1000px; margin: 0 auto; 
             background: white; border-radius: 15px; 
             padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }}
         .header {{ 
-            text-align: center; margin-bottom: 40px; 
-            padding: 20px; background: #f8f9fa; 
-            border-radius: 10px;
+            text-align: center; margin-bottom: 30px; 
+            padding: 20px; background: #f8f9fa; border-radius: 10px;
         }}
-        .dashboard-grid {{ 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 20px; margin: 30px 0; 
+        .section {{ 
+            margin: 25px 0; padding: 20px; 
+            background: #f8f9fa; border-radius: 8px; 
+            border-left: 4px solid #007bff;
         }}
-        .card {{ 
-            background: white; padding: 25px; 
-            border-radius: 10px; border: 2px solid #e9ecef; 
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .metrics {{ 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; margin: 20px 0;
         }}
-        .card:hover {{ 
-            transform: translateY(-5px); 
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15); 
+        .metric-card {{ 
+            background: white; padding: 15px; border-radius: 8px; 
+            text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
-        .card h3 {{ color: #495057; margin-top: 0; }}
-        .btn {{ 
-            display: inline-block; padding: 12px 24px; 
-            background: #007bff; color: white; 
-            text-decoration: none; border-radius: 6px; 
-            transition: background 0.3s ease;
+        .metric-value {{ 
+            font-size: 24px; font-weight: bold; color: #007bff; 
         }}
-        .btn:hover {{ background: #0056b3; }}
-        .timestamp {{ 
-            color: #6c757d; font-style: italic; 
+        .metric-label {{ 
+            font-size: 14px; color: #666; margin-top: 5px; 
+        }}
+        .status-badge {{ 
+            display: inline-block; padding: 5px 10px; 
+            background: #28a745; color: white; border-radius: 15px; 
+            font-size: 12px; font-weight: bold;
+        }}
+        .footer {{ 
             text-align: center; margin-top: 30px; 
+            padding: 20px; color: #666; border-top: 1px solid #eee;
         }}
-        .feature-list {{ 
-            list-style: none; padding: 0; 
+        .tech-stack {{ 
+            display: flex; flex-wrap: wrap; gap: 10px; 
+            justify-content: center; margin: 15px 0;
         }}
-        .feature-list li {{ 
-            padding: 8px 0; border-bottom: 1px solid #eee; 
-        }}
-        .feature-list li:before {{ 
-            content: "✅ "; color: #28a745; 
-            font-weight: bold; 
+        .tech-tag {{ 
+            padding: 5px 12px; background: #e9ecef; 
+            border-radius: 20px; font-size: 12px; color: #495057;
         }}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🤖 Automated ML Analysis Dashboard</h1>
-            <h2>自動化機器學習分析儀表板</h2>
-            <p>Real-time educational data analysis powered by Python & GitHub Actions</p>
+            <h1>🤖 Python 自動化 ML 展示</h1>
+            <h2>Automated Machine Learning Pipeline Demo</h2>
+            <span class="status-badge">✅ 部署成功 / Deployment Success</span>
+            <p style="margin-top: 15px; color: #666;">
+                展示 Python 在企業環境中的自動化機器學習應用<br>
+                Demonstrating Python's automated ML applications in enterprise environments
+            </p>
         </div>
         
-        <div class="dashboard-grid">
-            <div class="card">
-                <h3>📊 Latest ML Analysis Report</h3>
-                <p>Complete machine learning analysis with classification and clustering results.</p>
-                <a href="ml_analysis_report.html" class="btn">View Full Report / 檢視完整報表</a>
-            </div>
-            
-            <div class="card">
-                <h3>📈 Analysis Summary</h3>
-                <p>Key metrics and performance indicators in JSON format.</p>
-                <a href="analysis_summary.json" class="btn">Download Summary / 下載摘要</a>
-            </div>
-            
-            <div class="card">
-                <h3>🎨 Visualizations</h3>
-                <p>Interactive charts and plots generated from the analysis.</p>
-                <a href="plots/" class="btn">Browse Plots / 瀏覽圖表</a>
+        <div class="section">
+            <h3>📊 分析結果概覽 / Analysis Overview</h3>
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-value">{dataset_shape}</div>
+                    <div class="metric-label">資料集大小 / Dataset Size</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">{best_model_name}</div>
+                    <div class="metric-label">最佳模型 / Best Model</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">{best_accuracy:.3f}</div>
+                    <div class="metric-label">準確率 / Accuracy</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">{best_f1_score:.3f}</div>
+                    <div class="metric-label">F1分數 / F1 Score</div>
+                </div>
             </div>
         </div>
         
-        <div class="card">
-            <h3>🚀 About This Automation</h3>
-            <p>This dashboard is automatically generated using:</p>
-            <ul class="feature-list">
-                <li>Python for data generation and ML analysis</li>
-                <li>scikit-learn for machine learning models</li>
-                <li>matplotlib & seaborn for visualizations</li>
-                <li>GitHub Actions for CI/CD automation</li>
-                <li>GitHub Pages for web deployment</li>
-            </ul>
+        <div class="section">
+            <h3>🚀 自動化流程展示 / Automation Pipeline</h3>
+            <p><strong>這個頁面展示了完整的 Python 自動化流程：</strong></p>
+            <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                <p>✅ <strong>資料生成</strong>：自動產生教育資料集<br>
+                ✅ <strong>ML分析</strong>：多模型分類與分群分析<br>
+                ✅ <strong>報表生成</strong>：自動化HTML報表<br>
+                ✅ <strong>CI/CD部署</strong>：GitHub Actions自動部署<br>
+                ✅ <strong>多分支支援</strong>：每個學生分支獨立報表</p>
+            </div>
         </div>
         
-        <div class="timestamp">
-            Generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+        <div class="section">
+            <h3>💼 企業級Python應用 / Enterprise Python Applications</h3>
+            <div style="background: white; padding: 15px; border-radius: 5px;">
+                <p><strong>這個系統展示了軟體工程師日常使用的Python技能：</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>📈 <strong>數據科學</strong>：scikit-learn, pandas, matplotlib</li>
+                    <li>🔄 <strong>自動化</strong>：CI/CD pipeline, GitHub Actions</li>
+                    <li>🌐 <strong>網頁部署</strong>：GitHub Pages, 靜態網站生成</li>
+                    <li>📊 <strong>報表系統</strong>：自動化HTML/PDF報表生成</li>
+                    <li>🧪 <strong>測試與品質</strong>：自動化測試, 程式碼檢查</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>🛠️ 技術堆疊 / Tech Stack</h3>
+            <div class="tech-stack">
+                <span class="tech-tag">🐍 Python 3.11</span>
+                <span class="tech-tag">🤖 scikit-learn</span>
+                <span class="tech-tag">📊 matplotlib</span>
+                <span class="tech-tag">🐼 pandas</span>
+                <span class="tech-tag">🚀 GitHub Actions</span>
+                <span class="tech-tag">📄 GitHub Pages</span>
+                <span class="tech-tag">🔄 CI/CD</span>
+                <span class="tech-tag">📈 Data Science</span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>🎓 Python Enterprise Workshop Demo</strong></p>
+            <p style="font-size: 14px; color: #888;">
+                生成時間 / Generated: {generation_time[:19].replace('T', ' ')}<br>
+                展示如何用Python建立企業級自動化系統
+            </p>
         </div>
     </div>
 </body>
 </html>'''
     
     with open(public_dir / "index.html", 'w', encoding='utf-8') as f:
-        f.write(index_html)
-
-def create_plots_index(plots_dir):
-    """建立圖表目錄的索引頁面"""
+        f.write(simple_html)
     
-    # 獲取所有圖表檔案
-    plot_files = list(plots_dir.glob("*.png")) + list(plots_dir.glob("*.jpg")) + list(plots_dir.glob("*.svg"))
-    
-    plots_html = '''<!DOCTYPE html>
-<html>
-<head>
-    <title>ML Analysis Plots</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .plots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
-        .plot { 
-            background: white; padding: 20px; border-radius: 8px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; 
-        }
-        .plot img { max-width: 100%; height: auto; border-radius: 4px; }
-        .plot h3 { color: #333; margin-top: 0; }
-        .back-btn { 
-            display: inline-block; padding: 10px 20px; 
-            background: #007bff; color: white; text-decoration: none; 
-            border-radius: 4px; margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <a href="../" class="back-btn">← Back to Dashboard</a>
-            <h1>📊 ML Analysis Visualizations</h1>
-        </div>
-        <div class="plots-grid">'''
-    
-    for plot_file in sorted(plot_files):
-        filename = plot_file.name
-        plots_html += f'''
-            <div class="plot">
-                <h3>{filename}</h3>
-                <img src="{filename}" alt="{filename}">
-            </div>'''
-    
-    plots_html += '''
-        </div>
-    </div>
-</body>
-</html>'''
-    
-    with open(plots_dir / "index.html", 'w', encoding='utf-8') as f:
-        f.write(plots_html)
+    print(f"✅ Created simple single-page report")
 
 if __name__ == "__main__":
     create_pages_structure()
