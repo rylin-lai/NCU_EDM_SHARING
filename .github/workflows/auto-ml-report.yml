@@ -247,24 +247,25 @@ jobs:
         # Create target directory
         mkdir -p "${TARGET_DIR}"
         
-        # Create simple HTML report using echo
-        REPORT_FILE="${TARGET_DIR}/index.html"
-        echo '<!DOCTYPE html>' > "${REPORT_FILE}"
-        echo '<html><head><meta charset="UTF-8"><title>Python ML Demo</title>' >> "${REPORT_FILE}"
-        echo '<style>body{font-family:Arial;margin:20px;background:#667eea;color:#333}' >> "${REPORT_FILE}"
-        echo '.container{max-width:800px;margin:0 auto;background:white;padding:30px;border-radius:10px}' >> "${REPORT_FILE}"
-        echo '.header{text-align:center;margin-bottom:30px;padding:20px;background:#f8f9fa}' >> "${REPORT_FILE}"
-        echo '.badge{background:#28a745;color:white;padding:5px 10px;border-radius:15px;font-size:12px}</style></head>' >> "${REPORT_FILE}"
-        echo '<body><div class="container"><div class="header">' >> "${REPORT_FILE}"
-        echo '<h1>🤖 Python ML Demo</h1>' >> "${REPORT_FILE}"
-        echo '<span class="badge">✅ 部署成功</span>' >> "${REPORT_FILE}"
-        echo "<p>Branch: ${BRANCH_NAME}</p>" >> "${REPORT_FILE}"
-        echo '</div><div style="text-align:center;padding:20px">' >> "${REPORT_FILE}"
-        echo '<p>ML 分析報告已成功部署！</p>' >> "${REPORT_FILE}"
-        echo '<p>此為 Python 自動化工作流程展示</p>' >> "${REPORT_FILE}"
-        echo '</div></div></body></html>' >> "${REPORT_FILE}"
+        # Use existing create_pages_structure.py to generate comprehensive report
+        # First, checkout the original branch to get the script
+        git checkout ${{ needs.setup-deployment-info.outputs.branch-name }} -- auto_ml_demo/create_pages_structure.py
         
-        echo "✅ Created HTML report: ${REPORT_FILE}"
+        # Copy the script to current directory
+        cp auto_ml_demo/create_pages_structure.py .
+        
+        # Run the script to create comprehensive HTML report
+        python create_pages_structure.py
+        
+        # Move generated report to target directory
+        if [ "${IS_MAIN_BRANCH}" = "true" ]; then
+          cp public/index.html .
+        else
+          mkdir -p "branch-${BRANCH_NAME}"
+          cp public/index.html "branch-${BRANCH_NAME}/"
+        fi
+        
+        echo "✅ Created comprehensive ML report using create_pages_structure.py"
         
     - name: 📤 Commit and Push to gh-pages
       run: |
@@ -290,13 +291,14 @@ jobs:
     - name: 🎉 Success Notification
       if: needs.deploy-to-pages.result == 'success'
       run: |
-        DEPLOYMENT_PATH="${{ needs.setup-deployment-info.outputs.deployment-path }}"
+        BRANCH_NAME="${{ needs.setup-deployment-info.outputs.branch-name }}"
+        IS_MAIN_BRANCH="${{ needs.setup-deployment-info.outputs.is-main-branch }}"
         BASE_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
         
-        if [ -n "$DEPLOYMENT_PATH" ]; then
-          FULL_URL="${BASE_URL}/${DEPLOYMENT_PATH}/"
-        else
+        if [ "${IS_MAIN_BRANCH}" = "true" ]; then
           FULL_URL="${BASE_URL}/"
+        else
+          FULL_URL="${BASE_URL}/branch-${BRANCH_NAME}/"
         fi
         
         echo "🎉 ML Analysis Pipeline completed successfully!"
