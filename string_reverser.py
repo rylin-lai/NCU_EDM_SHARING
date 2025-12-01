@@ -119,5 +119,84 @@ def main():
         return 1
 
 
+# Module-level convenience functions for unit testing
+# 模組級別的便捷函數，供單元測試使用
+
+def reverse_string(text: str) -> str:
+    """
+    Simple string reversal function for unit testing
+    供單元測試使用的簡單字串反轉函數
+    """
+    if text is None:
+        raise TypeError("Input cannot be None")
+    if not isinstance(text, str):
+        # Convert to string for graceful handling
+        text = str(text)
+    return text[::-1]
+
+def is_palindrome(text: str) -> bool:
+    """
+    Check if a string is a palindrome
+    檢查字串是否為回文
+    """
+    if not isinstance(text, str):
+        text = str(text)
+    # Remove spaces and convert to lowercase for comparison
+    cleaned = text.lower().replace(" ", "")
+    return cleaned == cleaned[::-1]
+
+def count_characters(text: str) -> dict:
+    """
+    Count different types of characters in text
+    計算文字中不同類型的字符數量
+    """
+    if not isinstance(text, str):
+        text = str(text)
+    
+    alphabets = sum(1 for c in text if c.isalpha())
+    digits = sum(1 for c in text if c.isdigit())
+    spaces = sum(1 for c in text if c.isspace())
+    others = sum(1 for c in text if not c.isalnum() and not c.isspace())
+    
+    return {
+        "total": len(text),
+        "alphabets": alphabets,
+        "digits": digits,
+        "spaces": spaces,
+        "others": others
+    }
+
+def analyze_string(text: str) -> dict:
+    """
+    Complete string analysis including reversal, palindrome check, and character count
+    完整的字串分析，包括反轉、回文檢查和字符計數
+    """
+    if not isinstance(text, str):
+        text = str(text)
+    
+    reversed_text = reverse_string(text)
+    
+    result = {
+        "original": text,
+        "reversed": reversed_text,
+        "original_length": len(text),  # Match test expectations
+        "reversed_length": len(reversed_text),  # Match test expectations
+        "length": len(text),  # Keep for backwards compatibility
+        "is_palindrome": is_palindrome(text),
+        "char_count": count_characters(text)
+    }
+    
+    return result
+
+def save_result_to_file(result: dict, filename: str) -> None:
+    """
+    Save analysis result to a JSON file
+    將分析結果保存到 JSON 檔案
+    """
+    import json
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+
+
 if __name__ == "__main__":
     sys.exit(main())
