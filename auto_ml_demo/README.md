@@ -38,7 +38,41 @@ auto_ml_demo/
 └── README.md                        # 說明文件
 ```
 
+## 🚀 多分支部署功能 / Multi-Branch Deployment
+
+✨ **每個學生都可以有自己的ML分析報表！**
+
+- **主分支**: 部署到根路徑 `https://username.github.io/repo/`
+- **PR**: 部署到 `https://username.github.io/repo/pr-123/`
+- **學生分支**: 部署到 `https://username.github.io/repo/branch-student1/`
+
+📖 **詳細說明**: 請參閱 [MULTI_BRANCH_DEPLOYMENT.md](./MULTI_BRANCH_DEPLOYMENT.md)
+
 ## 🚀 使用方法 / Usage
+
+### 學生快速開始 / Quick Start for Students
+
+1. **創建自己的分支 / Create your branch**
+```bash
+git checkout -b student-your-name
+```
+
+2. **可選：調整參數 / Optional: Adjust parameters**
+```bash
+# 修改 educational_dataset_generator.py 中的預設值
+# 或透過 GitHub Actions 手動執行時設定參數
+```
+
+3. **推送觸發部署 / Push to trigger deployment**
+```bash
+git add .
+git commit -m "Your name's ML analysis"
+git push origin student-your-name
+```
+
+4. **查看結果 / View results**
+- 訪問 `https://username.github.io/repository/branch-student-your-name/`
+- 或在主頁面 `https://username.github.io/repository/` 找到你的部署
 
 ### 本地執行 / Local Execution
 
@@ -87,11 +121,34 @@ git push
 - 看到熟悉的 Week12 資料集在生產環境的應用
 - 學習如何將 Jupyter notebook 轉換為生產級 Python 腳本
 - 理解 CI/CD 的概念和實際應用
+- 🎯 **每個人都有專屬的ML報表**，增強學習動機
+- 學習 Git 分支管理和協作開發
 
 ### 對講師來說 / For Instructors
 - 完美的 2.5 小時工作坊內容
 - 結合理論和實務的教學案例
 - 展示 Python 在企業 DevOps 中的角色
+- 📊 **即時監控所有學生進度**，透過總覽頁面
+- 🔄 **支援多人同時實作**，不會互相干擾
+
+### 課堂建議 / Classroom Recommendations
+
+#### 🕐 **時間分配 (2.5小時)**
+1. **理論介紹** (30分鐘): GitHub Actions + Python自動化概念
+2. **Demo展示** (20分鐘): 展示完整工作流程
+3. **學生實作** (80分鐘): 每個人創建自己的分支和部署
+4. **結果分享** (30分鐘): 檢視和比較大家的結果
+5. **Q&A討論** (10分鐘): 問題解答和延伸討論
+
+#### 👥 **建議班級大小**
+- **理想**: 10-20人
+- **最大**: 30人 (超過需要考慮repository性能)
+
+#### 📋 **課前準備清單**
+- [ ] 學生都有 GitHub 帳號
+- [ ] 講師已設定好主 repository
+- [ ] 啟用 GitHub Pages
+- [ ] 測試完整工作流程
 
 ## 🛠️ 技術堆疊 / Tech Stack
 

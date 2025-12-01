@@ -2,12 +2,13 @@ name: 🤖 Automated ML Report Generation
 
 on:
   push:
-    branches: [ main, master ]
     paths: 
       - 'auto_ml_demo/**'
       - '.github/workflows/auto-ml-report.yml'
   pull_request:
-    branches: [ main, master ]
+    paths: 
+      - 'auto_ml_demo/**'
+      - '.github/workflows/auto-ml-report.yml'
   schedule:
     - cron: '0 0 * * *'  # Daily at midnight UTC
   workflow_dispatch:
@@ -24,9 +25,54 @@ on:
         type: string
 
 jobs:
+  setup-deployment-info:
+    name: 📋 Setup Deployment Info
+    runs-on: ubuntu-latest
+    outputs:
+      deployment-path: ${{ steps.path-info.outputs.deployment-path }}
+      branch-name: ${{ steps.path-info.outputs.branch-name }}
+      is-main-branch: ${{ steps.path-info.outputs.is-main-branch }}
+      pr-number: ${{ steps.path-info.outputs.pr-number }}
+      
+    steps:
+    - name: 🔍 Determine Deployment Path
+      id: path-info
+      run: |
+        # 確定部署路徑和分支資訊
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          # PR 部署到 pr-{number} 路徑
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          DEPLOYMENT_PATH="pr-${PR_NUMBER}"
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          IS_MAIN_BRANCH="false"
+          echo "pr-number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+        elif [ "${{ github.ref_name }}" = "main" ] || [ "${{ github.ref_name }}" = "master" ]; then
+          # main/master 分支部署到根路徑
+          DEPLOYMENT_PATH=""
+          BRANCH_NAME="${{ github.ref_name }}"
+          IS_MAIN_BRANCH="true"
+          echo "pr-number=" >> $GITHUB_OUTPUT
+        else
+          # 其他分支部署到 branch-{name} 路徑
+          BRANCH_NAME="${{ github.ref_name }}"
+          DEPLOYMENT_PATH="branch-${BRANCH_NAME}"
+          IS_MAIN_BRANCH="false"
+          echo "pr-number=" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "deployment-path=${DEPLOYMENT_PATH}" >> $GITHUB_OUTPUT
+        echo "branch-name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+        echo "is-main-branch=${IS_MAIN_BRANCH}" >> $GITHUB_OUTPUT
+        
+        echo "🔍 Deployment Info:"
+        echo "  Branch: ${BRANCH_NAME}"
+        echo "  Path: ${DEPLOYMENT_PATH}"
+        echo "  Is Main: ${IS_MAIN_BRANCH}"
+
   generate-dataset:
     name: 📊 Generate Educational Dataset
     runs-on: ubuntu-latest
+    needs: setup-deployment-info
     
     outputs:
       dataset-path: ${{ steps.generate.outputs.dataset-path }}
@@ -71,7 +117,7 @@ jobs:
         ls -la data/
     
     - name: 📤 Upload Dataset Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: educational-dataset
         path: auto_ml_demo/data/
@@ -79,7 +125,7 @@ jobs:
 
   run-ml-analysis:
     name: 🤖 Run ML Analysis
-    needs: generate-dataset
+    needs: [setup-deployment-info, generate-dataset]
     runs-on: ubuntu-latest
     
     steps:
@@ -99,7 +145,7 @@ jobs:
         pip install -r requirements.txt
         
     - name: 📥 Download Dataset
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: educational-dataset
         path: auto_ml_demo/data/
@@ -120,7 +166,7 @@ jobs:
         ls -la reports/
         
     - name: 📤 Upload ML Reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ml-analysis-reports
         path: auto_ml_demo/reports/
@@ -128,9 +174,8 @@ jobs:
 
   deploy-to-pages:
     name: 🚀 Deploy to GitHub Pages
-    needs: [generate-dataset, run-ml-analysis]
+    needs: [setup-deployment-info, generate-dataset, run-ml-analysis]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
     permissions:
       contents: read
@@ -146,7 +191,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: 📥 Download ML Reports
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: ml-analysis-reports
         path: reports/
@@ -156,28 +201,213 @@ jobs:
       with:
         python-version: '3.11'
         
-    - name: 🏗️ Create Pages Structure
-      working-directory: auto_ml_demo
+    - name: 📥 Download Existing Pages (for multi-branch support)
+      continue-on-error: true
       run: |
+        # 嘗試下載現有的GitHub Pages內容
+        mkdir -p existing_pages
+        curl -L -f -s "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" -o existing_pages/index.html || echo "No existing pages found"
+        
+    - name: 🏗️ Create Multi-Branch Pages Structure
+      working-directory: auto_ml_demo
+      env:
+        DEPLOYMENT_PATH: ${{ needs.setup-deployment-info.outputs.deployment-path }}
+        BRANCH_NAME: ${{ needs.setup-deployment-info.outputs.branch-name }}
+        IS_MAIN_BRANCH: ${{ needs.setup-deployment-info.outputs.is-main-branch }}
+        PR_NUMBER: ${{ needs.setup-deployment-info.outputs.pr-number }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_ACTOR: ${{ github.actor }}
+      run: |
+        echo "🔄 Creating pages structure for branch: ${BRANCH_NAME}"
+        echo "🔄 Deployment path: ${DEPLOYMENT_PATH}"
+        
+        # 創建基本結構
         python create_pages_structure.py
-        echo "✅ GitHub Pages structure created"
-        find public -type f | head -10
+        
+        # 如果不是主分支，需要調整結構
+        if [ "${IS_MAIN_BRANCH}" = "false" ]; then
+          echo "📁 Creating sub-directory structure for non-main branch"
+          mkdir -p "public_temp/${DEPLOYMENT_PATH}"
+          mv public/* "public_temp/${DEPLOYMENT_PATH}/" 2>/dev/null || true
+          mv public_temp/* public/ 2>/dev/null || true
+          rmdir public_temp 2>/dev/null || true
+        fi
+        
+        # 創建或更新主索引頁面（列出所有部署）
+        python - << 'EOF'
+        import os
+        import json
+        import datetime
+        from pathlib import Path
+        
+        deployment_path = os.environ.get('DEPLOYMENT_PATH', '')
+        branch_name = os.environ.get('BRANCH_NAME', 'unknown')
+        is_main_branch = os.environ.get('IS_MAIN_BRANCH') == 'true'
+        pr_number = os.environ.get('PR_NUMBER', '')
+        repo_name = os.environ.get('GITHUB_REPOSITORY', '').split('/')[-1]
+        actor = os.environ.get('GITHUB_ACTOR', 'unknown')
+        
+        # 讀取或創建部署記錄
+        deployments_file = Path('public/deployments.json')
+        deployments = {}
+        
+        if deployments_file.exists():
+            try:
+                with open(deployments_file, 'r') as f:
+                    deployments = json.load(f)
+            except:
+                deployments = {}
+        
+        # 更新當前部署記錄
+        deployment_info = {
+            'branch': branch_name,
+            'path': deployment_path,
+            'is_main': is_main_branch,
+            'pr_number': pr_number if pr_number else None,
+            'actor': actor,
+            'timestamp': datetime.datetime.now().isoformat(),
+            'url': f"./{deployment_path}/" if deployment_path else "./"
+        }
+        
+        deployment_key = deployment_path if deployment_path else 'main'
+        deployments[deployment_key] = deployment_info
+        
+        # 保存部署記錄
+        with open(deployments_file, 'w') as f:
+            json.dump(deployments, f, indent=2)
+        
+        # 如果是主分支，創建總覽頁面
+        if is_main_branch or not deployment_path:
+            main_index_html = f'''<!DOCTYPE html>
+        <html lang="zh-TW">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>🎓 ML Workshop - All Deployments</title>
+            <style>
+                body {{ 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    margin: 0; padding: 20px; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                }}
+                .container {{ 
+                    max-width: 1200px; margin: 0 auto; 
+                    background: white; border-radius: 15px; 
+                    padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                }}
+                .header {{ 
+                    text-align: center; margin-bottom: 40px; 
+                    padding: 20px; background: #f8f9fa; 
+                    border-radius: 10px;
+                }}
+                .deployments-grid {{ 
+                    display: grid; 
+                    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+                    gap: 20px; margin: 30px 0; 
+                }}
+                .deployment-card {{ 
+                    background: white; padding: 20px; 
+                    border-radius: 10px; border: 2px solid #e9ecef; 
+                    transition: transform 0.3s ease, box-shadow 0.3s ease;
+                    border-left: 4px solid #007bff;
+                }}
+                .deployment-card:hover {{ 
+                    transform: translateY(-5px); 
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.15); 
+                }}
+                .deployment-card.main {{ border-left-color: #28a745; }}
+                .deployment-card.pr {{ border-left-color: #ffc107; }}
+                .deployment-card.branch {{ border-left-color: #17a2b8; }}
+                .deployment-title {{ 
+                    font-size: 18px; font-weight: bold; 
+                    margin-bottom: 10px; color: #495057; 
+                }}
+                .deployment-info {{ 
+                    font-size: 14px; color: #6c757d; 
+                    margin: 5px 0; 
+                }}
+                .deployment-link {{ 
+                    display: inline-block; padding: 10px 20px; 
+                    background: #007bff; color: white; 
+                    text-decoration: none; border-radius: 6px; 
+                    margin-top: 15px; transition: background 0.3s ease;
+                }}
+                .deployment-link:hover {{ background: #0056b3; }}
+                .timestamp {{ 
+                    color: #6c757d; font-style: italic; 
+                    text-align: center; margin-top: 30px; 
+                    font-size: 12px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🎓 ML Workshop - Student Deployments</h1>
+                    <h2>機器學習工作坊 - 學生部署總覽</h2>
+                    <p>每個學生的分支和PR都有獨立的ML分析報表 / Each student branch and PR has its own ML analysis report</p>
+                </div>
+                
+                <div class="deployments-grid">'''
+            
+            # 添加各個部署
+            sorted_deployments = sorted(deployments.items(), key=lambda x: (x[1]['is_main'], x[1]['timestamp']))
+            
+            for deploy_key, deploy_info in sorted_deployments:
+                card_class = "main" if deploy_info['is_main'] else ("pr" if deploy_info.get('pr_number') else "branch")
+                title = "🏠 Main Branch" if deploy_info['is_main'] else (f"🔄 PR #{deploy_info.get('pr_number')}" if deploy_info.get('pr_number') else f"🌿 Branch: {deploy_info['branch']}")
+                
+                main_index_html += f'''
+                    <div class="deployment-card {card_class}">
+                        <div class="deployment-title">{title}</div>
+                        <div class="deployment-info">👤 Author: {deploy_info['actor']}</div>
+                        <div class="deployment-info">🕒 Updated: {deploy_info['timestamp'][:19].replace('T', ' ')}</div>
+                        {'<div class="deployment-info">📝 Branch: ' + deploy_info['branch'] + '</div>' if not deploy_info['is_main'] else ''}
+                        <a href="{deploy_info['url']}" class="deployment-link">View Report 檢視報表 →</a>
+                    </div>'''
+            
+            main_index_html += f'''
+                </div>
+                
+                <div class="timestamp">
+                    Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}<br>
+                    Repository: {repo_name} | Total deployments: {len(deployments)}
+                </div>
+            </div>
+            
+            <script>
+                // 自動重新整理（每5分鐘）
+                setTimeout(() => location.reload(), 300000);
+            </script>
+        </body>
+        </html>'''
+            
+            with open('public/index.html', 'w', encoding='utf-8') as f:
+                f.write(main_index_html)
+        
+        print(f"✅ Multi-branch pages structure created for {branch_name}")
+        print(f"📁 Deployment path: {deployment_path or 'root'}")
+        EOF
+        
+        echo "✅ Pages structure completed"
+        find public -name "*.html" | head -10
         
     - name: 📤 Setup Pages
       uses: actions/configure-pages@v3
       
     - name: 📤 Upload Pages Artifact
-      uses: actions/upload-pages-artifact@v2
+      uses: actions/upload-pages-artifact@v3
       with:
         path: auto_ml_demo/public/
         
     - name: 🚀 Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v2
+      uses: actions/deploy-pages@v4
 
   notify-completion:
     name: 📧 Notify Completion
-    needs: [generate-dataset, run-ml-analysis, deploy-to-pages]
+    needs: [setup-deployment-info, generate-dataset, run-ml-analysis, deploy-to-pages]
     runs-on: ubuntu-latest
     if: always()
     
