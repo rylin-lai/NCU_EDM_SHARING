@@ -1,0 +1,131 @@
+{
+  "generated_at": "2025-12-01T18:26:38.526667",
+  "dataset_info": {
+    "shape": [
+      500,
+      11
+    ],
+    "columns": [
+      "student_id",
+      "semester",
+      "HelpSeeking",
+      "Pretest_score",
+      "Video_hours",
+      "Assignment_score",
+      "Attendance_rate",
+      "Admission_type",
+      "Learning_style",
+      "Pass_course",
+      "generated_at"
+    ],
+    "missing_values": {
+      "student_id": 0,
+      "semester": 0,
+      "HelpSeeking": 0,
+      "Pretest_score": 0,
+      "Video_hours": 0,
+      "Assignment_score": 0,
+      "Attendance_rate": 0,
+      "Admission_type": 0,
+      "Learning_style": 0,
+      "Pass_course": 0,
+      "generated_at": 0
+    },
+    "dtypes": {
+      "student_id": "object",
+      "semester": "object",
+      "HelpSeeking": "int64",
+      "Pretest_score": "float64",
+      "Video_hours": "float64",
+      "Assignment_score": "float64",
+      "Attendance_rate": "float64",
+      "Admission_type": "object",
+      "Learning_style": "object",
+      "Pass_course": "int64",
+      "generated_at": "object"
+    }
+  },
+  "best_classification_model": {
+    "name": "Logistic Regression",
+    "f1_score": 0.8238297872340425,
+    "accuracy": 0.88,
+    "auc": 0.6856060606060606
+  },
+  "all_classification_models": {
+    "Logistic Regression": {
+      "accuracy": 0.88,
+      "precision": 0.7744,
+      "recall": 0.88,
+      "f1": 0.8238297872340425,
+      "auc": 0.6856060606060606,
+      "cv_f1_mean": 0.8426951065759013,
+      "cv_f1_std": 0.02811256444627564
+    },
+    "Random Forest": {
+      "accuracy": 0.88,
+      "precision": 0.7744,
+      "recall": 0.88,
+      "f1": 0.8238297872340425,
+      "auc": 0.5454545454545454,
+      "cv_f1_mean": 0.8328784415898511,
+      "cv_f1_std": 0.012487895090748284
+    },
+    "KNN": {
+      "accuracy": 0.85,
+      "precision": 0.7711340206185566,
+      "recall": 0.85,
+      "f1": 0.8086486486486487,
+      "auc": 0.5170454545454546,
+      "cv_f1_mean": 0.8367183716866691,
+      "cv_f1_std": 0.023399163715150308
+    },
+    "SVM": {
+      "accuracy": 0.88,
+      "precision": 0.7744,
+      "recall": 0.88,
+      "f1": 0.8238297872340425,
+      "auc": 0.6259469696969696,
+      "cv_f1_mean": 0.8330699074841037,
+      "cv_f1_std": 0.00911561964651149
+    }
+  },
+  "clustering_summary": {
+    "kmeans": {
+      "best_k": 2,
+      "best_silhouette": 0.1343496615864476,
+      "inertias": [
+        2425.1496321970135,
+        2194.776034970092,
+        2035.4796283558637,
+        1898.1589606723708,
+        1788.0503491432573,
+        1701.0223038171532
+      ],
+      "silhouette_scores": [
+        0.1343496615864476,
+        0.11830679882493023,
+        0.11739074968973394,
+        0.11506818047396877,
+        0.11619046688801533,
+        0.1189980685715459
+      ],
+      "cluster_sizes": [
+        161,
+        239
+      ]
+    },
+    "hierarchical": {
+      "n_clusters": 2,
+      "silhouette_score": 0.10690249650326855,
+      "cluster_sizes": [
+        271,
+        129
+      ]
+    }
+  },
+  "report_path": "ml_analysis_report.html",
+  "plots": [
+    "Classification Model Comparison",
+    "Clustering Analysis"
+  ]
+}
