@@ -124,7 +124,11 @@ jobs:
         mkdir -p packages/$PACKAGE_NAME
         
         # Copy all reports and assets
+        echo "🔄 Copying reports to package directory"
+        ls -la custom_analysis/reports/
         cp -r custom_analysis/reports/* packages/$PACKAGE_NAME/
+        echo "📁 Package contents:"
+        ls -la packages/$PACKAGE_NAME/
         
         # Create a comprehensive index.html
         python - << 'EOF'
@@ -286,7 +290,11 @@ jobs:
         </body>
         </html>'''
         
-        with open(f"packages/{package_name}/index.html", 'w', encoding='utf-8') as f:
+        # Ensure directory exists
+        package_dir = Path(f"packages/{package_name}")
+        package_dir.mkdir(parents=True, exist_ok=True)
+        
+        with open(package_dir / "index.html", 'w', encoding='utf-8') as f:
             f.write(html_content)
         
         print(f"✅ Created comprehensive report package: {package_name}")
@@ -294,11 +302,16 @@ jobs:
         
         # Create ZIP package
         cd packages
-        zip -r "${PACKAGE_NAME}.zip" "$PACKAGE_NAME"
-        
-        echo "package-name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
-        echo "✅ Report package created: ${PACKAGE_NAME}.zip"
-        ls -la *.zip
+        if [ -d "$PACKAGE_NAME" ]; then
+          zip -r "${PACKAGE_NAME}.zip" "$PACKAGE_NAME"
+          echo "package-name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "✅ Report package created: ${PACKAGE_NAME}.zip"
+          ls -la *.zip
+        else
+          echo "❌ Package directory not found: $PACKAGE_NAME"
+          ls -la
+          exit 1
+        fi
         
     - name: 📤 Upload Analysis Package
       uses: actions/upload-artifact@v4
