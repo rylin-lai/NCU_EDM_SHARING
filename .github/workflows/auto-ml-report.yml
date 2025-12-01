@@ -181,6 +181,7 @@ jobs:
       contents: read
       pages: write
       id-token: write
+      actions: read
       
     environment:
       name: github-pages
@@ -395,9 +396,7 @@ jobs:
         
     - name: 📤 Setup Pages
       uses: actions/configure-pages@v4
-      with:
-        # Enable Pages if not already enabled
-        enablement: true
+      continue-on-error: true
       
     - name: 📤 Upload Pages Artifact
       uses: actions/upload-pages-artifact@v3
