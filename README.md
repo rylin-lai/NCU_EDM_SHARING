@@ -91,15 +91,32 @@ jupyter notebook tlsh_basic_tutorial.ipynb
 
 ### 3. 🤖 自動化ML分析系統
 
+#### 🔄 自動分析 (推送觸發)
 每當推送到分支時，會自動：
 - 生成教育資料集
 - 執行多模型ML分析 (Logistic Regression, Random Forest, KNN, SVM)
 - 產生完整的HTML分析報告
 - 部署到GitHub Pages
 
-#### 🔗 查看即時報告 / View Live Reports:
+**🔗 查看即時報告**:
 - **主頁面**: https://rylin-lai.github.io/NCU_EDM_SHARING/
 - **分支報告**: https://rylin-lai.github.io/NCU_EDM_SHARING/branch-{分支名稱}/
+
+#### 🎯 手動分析 (自定義參數)
+透過GitHub Actions手動觸發：
+- **自選分析分支**: 指定要分析的branch
+- **自定義資料集大小**: 100-2000學生數據
+- **可選目標變數**: Pass_course, Final_grade, Engagement_level
+- **個人化報告**: 下載完整的HTML分析包
+- **離線查看**: 獨立的HTML報告，可在任何地方開啟
+
+**🚀 如何使用手動分析**:
+1. 前往 **Actions** → **Manual ML Analysis**
+2. 點擊 **Run workflow**
+3. 選擇參數 (分支、資料集大小、目標變數等)
+4. 等待分析完成
+5. 下載 artifact 中的 ZIP 檔案
+6. 解壓縮並開啟 `index.html`
 
 ### 4. 🔄 CI/CD自動化流程
 
@@ -186,6 +203,7 @@ pytest test_string_reverser_unit.py -v --cov=string_reverser
 
 ### 🤖 自動化ML分析
 
+#### 本地執行
 ```bash
 cd auto_ml_demo
 
@@ -195,6 +213,25 @@ python educational_dataset_generator.py --students 300 --output data/
 # 執行ML分析
 python ml_report_generator.py --data data/educational_data_2024_Fall.csv --output reports/
 ```
+
+#### 🎯 GitHub Actions 手動分析
+1. **前往 Actions 頁面**: https://github.com/rylin-lai/NCU_EDM_SHARING/actions
+2. **選擇 "Manual ML Analysis"** workflow
+3. **點擊 "Run workflow"** 並設定參數：
+   - 目標分支 (如: `main`, `student-yourname`)
+   - 資料集大小 (100-2000)
+   - 學期識別 (如: `2024_Fall`)
+   - 目標變數 (`Pass_course`, `Final_grade`, 等)
+   - 分析名稱 (自定義)
+4. **等待完成** (約3-5分鐘)
+5. **下載結果**: 在 Artifacts 中下載 ZIP 檔案
+6. **離線查看**: 解壓縮後開啟 `index.html`
+
+**適用情境**:
+- 🎓 學生想要自己的個人化分析
+- 📊 教師需要不同參數的比較分析  
+- 💼 展示給其他人的獨立報告
+- 📱 離線環境下的報告查看
 
 ---
 

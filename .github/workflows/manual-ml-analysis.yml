@@ -1,0 +1,335 @@
+name: 📊 Manual ML Analysis - Custom Dataset
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Target branch for analysis'
+        required: true
+        default: 'main'
+        type: string
+      dataset_size:
+        description: 'Number of students in dataset'
+        required: false
+        default: '500'
+        type: choice
+        options:
+          - '100'
+          - '300'
+          - '500'
+          - '1000'
+          - '2000'
+      semester:
+        description: 'Semester identifier'
+        required: false
+        default: '2024_Fall'
+        type: string
+      analysis_name:
+        description: 'Custom analysis name (for report filename)'
+        required: false
+        default: 'custom_analysis'
+        type: string
+      target_variable:
+        description: 'Target variable for ML analysis'
+        required: false
+        default: 'Pass_course'
+        type: choice
+        options:
+          - 'Pass_course'
+          - 'Final_grade'
+          - 'Engagement_level'
+      include_clustering:
+        description: 'Include clustering analysis'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  manual-ml-analysis:
+    name: 🎯 Custom ML Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.branch_name }}
+        
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+        
+    - name: 📦 Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        cd auto_ml_demo
+        pip install -r requirements.txt
+        
+    - name: 📊 Generate Custom Dataset
+      id: generate
+      working-directory: auto_ml_demo
+      run: |
+        mkdir -p custom_analysis
+        
+        STUDENTS="${{ github.event.inputs.dataset_size }}"
+        SEMESTER="${{ github.event.inputs.semester }}"
+        ANALYSIS_NAME="${{ github.event.inputs.analysis_name }}"
+        
+        echo "🔄 Generating custom dataset with $STUDENTS students for $SEMESTER"
+        
+        python educational_dataset_generator.py \
+          --students $STUDENTS \
+          --semester $SEMESTER \
+          --output custom_analysis/ \
+          --both
+        
+        DATASET_PATH="custom_analysis/educational_data_${SEMESTER}.csv"
+        echo "dataset-path=$DATASET_PATH" >> $GITHUB_OUTPUT
+        echo "analysis-name=$ANALYSIS_NAME" >> $GITHUB_OUTPUT
+        
+        echo "✅ Custom dataset generated: $DATASET_PATH"
+        ls -la custom_analysis/
+        
+    - name: 🤖 Run Custom ML Analysis
+      working-directory: auto_ml_demo
+      run: |
+        echo "🔄 Running custom ML analysis"
+        echo "Dataset: ${{ steps.generate.outputs.dataset-path }}"
+        echo "Target: ${{ github.event.inputs.target_variable }}"
+        echo "Include Clustering: ${{ github.event.inputs.include_clustering }}"
+        
+        mkdir -p custom_analysis/reports/plots
+        
+        # Run ML analysis with custom parameters
+        python ml_report_generator.py \
+          --data ${{ steps.generate.outputs.dataset-path }} \
+          --output custom_analysis/reports/ \
+          --target ${{ github.event.inputs.target_variable }}
+        
+        echo "✅ Custom ML analysis completed"
+        ls -la custom_analysis/reports/
+        
+    - name: 📄 Generate Downloadable Report Package
+      working-directory: auto_ml_demo
+      run: |
+        echo "🔄 Creating downloadable report package"
+        
+        ANALYSIS_NAME="${{ steps.generate.outputs.analysis-name }}"
+        TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+        PACKAGE_NAME="${ANALYSIS_NAME}_${TIMESTAMP}"
+        
+        # Create package directory
+        mkdir -p packages/$PACKAGE_NAME
+        
+        # Copy all reports and assets
+        cp -r custom_analysis/reports/* packages/$PACKAGE_NAME/
+        
+        # Create a comprehensive index.html
+        python - << 'EOF'
+        import json
+        import os
+        from datetime import datetime
+        from pathlib import Path
+        
+        package_name = "$PACKAGE_NAME"
+        analysis_name = "${{ steps.generate.outputs.analysis-name }}"
+        branch_name = "${{ github.event.inputs.branch_name }}"
+        dataset_size = "${{ github.event.inputs.dataset_size }}"
+        semester = "${{ github.event.inputs.semester }}"
+        target_var = "${{ github.event.inputs.target_variable }}"
+        include_clustering = "${{ github.event.inputs.include_clustering }}"
+        actor = "${{ github.actor }}"
+        
+        # Read analysis summary if exists
+        summary_path = Path(f"packages/{package_name}/analysis_summary.json")
+        summary_data = {}
+        if summary_path.exists():
+            with open(summary_path, 'r') as f:
+                summary_data = json.load(f)
+        
+        # Create comprehensive report
+        html_content = f'''<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>🎯 Custom ML Analysis Report - {analysis_name}</title>
+            <style>
+                body {{ 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    margin: 0; padding: 20px; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh; color: #333;
+                }}
+                .container {{ 
+                    max-width: 1200px; margin: 0 auto; 
+                    background: white; border-radius: 15px; 
+                    padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                }}
+                .header {{ 
+                    text-align: center; margin-bottom: 30px; 
+                    padding: 20px; background: #f8f9fa; border-radius: 10px;
+                }}
+                .section {{ 
+                    margin: 25px 0; padding: 20px; 
+                    background: #f8f9fa; border-radius: 8px; 
+                    border-left: 4px solid #007bff;
+                }}
+                .parameter-grid {{ 
+                    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+                    gap: 15px; margin: 20px 0;
+                }}
+                .parameter-card {{ 
+                    background: white; padding: 15px; border-radius: 8px; 
+                    text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }}
+                .parameter-value {{ 
+                    font-size: 18px; font-weight: bold; color: #007bff; 
+                }}
+                .parameter-label {{ 
+                    font-size: 12px; color: #666; margin-top: 5px; 
+                }}
+                .file-list {{ 
+                    list-style: none; padding: 0; 
+                }}
+                .file-list li {{ 
+                    padding: 10px; margin: 5px 0; 
+                    background: white; border-radius: 5px; 
+                    border-left: 3px solid #28a745;
+                }}
+                .file-list a {{ 
+                    text-decoration: none; color: #007bff; 
+                    font-weight: bold;
+                }}
+                .status-badge {{ 
+                    display: inline-block; padding: 5px 10px; 
+                    background: #28a745; color: white; border-radius: 15px; 
+                    font-size: 12px; font-weight: bold;
+                }}
+                .footer {{ 
+                    text-align: center; margin-top: 30px; 
+                    padding: 20px; color: #666; border-top: 1px solid #eee;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🎯 Custom ML Analysis Report</h1>
+                    <h2>{analysis_name}</h2>
+                    <span class="status-badge">✅ Analysis Complete</span>
+                    <p style="margin-top: 15px; color: #666;">
+                        Generated via GitHub Actions Manual Trigger<br>
+                        Branch: {branch_name} | Analyst: {actor}
+                    </p>
+                </div>
+                
+                <div class="section">
+                    <h3>📊 Analysis Parameters</h3>
+                    <div class="parameter-grid">
+                        <div class="parameter-card">
+                            <div class="parameter-value">{dataset_size}</div>
+                            <div class="parameter-label">Students</div>
+                        </div>
+                        <div class="parameter-card">
+                            <div class="parameter-value">{semester}</div>
+                            <div class="parameter-label">Semester</div>
+                        </div>
+                        <div class="parameter-card">
+                            <div class="parameter-value">{target_var}</div>
+                            <div class="parameter-label">Target Variable</div>
+                        </div>
+                        <div class="parameter-card">
+                            <div class="parameter-value">{include_clustering}</div>
+                            <div class="parameter-label">Clustering</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>📄 Available Reports</h3>
+                    <ul class="file-list">
+                        <li>📊 <a href="ml_analysis_report.html">Complete ML Analysis Report</a></li>
+                        <li>📈 <a href="analysis_summary.json">Analysis Summary (JSON)</a></li>'''
+        
+        # Add plots if they exist
+        plots_dir = Path(f"packages/{package_name}/plots")
+        if plots_dir.exists():
+            html_content += '''
+                        <li>🎨 <strong>Visualization Files:</strong></li>'''
+            for plot_file in plots_dir.glob("*.png"):
+                html_content += f'''
+                        <li style="margin-left: 20px;">📈 <a href="plots/{plot_file.name}">{plot_file.name}</a></li>'''
+        
+        html_content += f'''
+                    </ul>
+                </div>
+                
+                <div class="section">
+                    <h3>ℹ️ Analysis Information</h3>
+                    <p><strong>Generated:</strong> {datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
+                    <p><strong>Package ID:</strong> {package_name}</p>
+                    <p><strong>GitHub Repository:</strong> ${{ github.repository }}</p>
+                    <p><strong>Analysis Branch:</strong> {branch_name}</p>
+                </div>
+                
+                <div class="footer">
+                    <p><strong>🎓 Custom ML Analysis Report</strong></p>
+                    <p style="font-size: 14px; color: #888;">
+                        Generated via GitHub Actions Manual Workflow<br>
+                        Download this entire package for offline viewing
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>'''
+        
+        with open(f"packages/{package_name}/index.html", 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        
+        print(f"✅ Created comprehensive report package: {package_name}")
+        EOF
+        
+        # Create ZIP package
+        cd packages
+        zip -r "${PACKAGE_NAME}.zip" "$PACKAGE_NAME"
+        
+        echo "package-name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+        echo "✅ Report package created: ${PACKAGE_NAME}.zip"
+        ls -la *.zip
+        
+    - name: 📤 Upload Analysis Package
+      uses: actions/upload-artifact@v4
+      with:
+        name: ml-analysis-${{ steps.generate.outputs.analysis-name }}-${{ github.event.inputs.branch_name }}
+        path: |
+          auto_ml_demo/packages/*.zip
+          auto_ml_demo/packages/*/
+        retention-days: 30
+        
+    - name: 📋 Analysis Summary
+      run: |
+        echo "## 🎯 Custom ML Analysis Completed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Analysis Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch**: ${{ github.event.inputs.branch_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Dataset Size**: ${{ github.event.inputs.dataset_size }} students" >> $GITHUB_STEP_SUMMARY
+        echo "- **Semester**: ${{ github.event.inputs.semester }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Target Variable**: ${{ github.event.inputs.target_variable }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Analysis Name**: ${{ steps.generate.outputs.analysis-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Clustering Included**: ${{ github.event.inputs.include_clustering }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📥 Download Report" >> $GITHUB_STEP_SUMMARY
+        echo "1. Go to the **Actions** tab in this repository" >> $GITHUB_STEP_SUMMARY
+        echo "2. Find this workflow run" >> $GITHUB_STEP_SUMMARY
+        echo "3. Download the artifact: **ml-analysis-${{ steps.generate.outputs.analysis-name }}-${{ github.event.inputs.branch_name }}**" >> $GITHUB_STEP_SUMMARY
+        echo "4. Extract the ZIP file and open **index.html**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🎉 Features Generated" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Complete HTML ML analysis report" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Model comparison tables" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Visualization charts" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Analysis summary JSON" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Downloadable package for offline viewing" >> $GITHUB_STEP_SUMMARY
