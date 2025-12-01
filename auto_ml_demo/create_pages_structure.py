@@ -68,6 +68,9 @@ def create_simple_single_page(public_dir, summary_data):
     best_f1_score = best_model.get('f1_score', 0) if best_model else 0
     best_accuracy = best_model.get('accuracy', 0) if best_model else 0
     
+    # 獲取所有模型的結果
+    all_models = summary_data.get('all_classification_models', {})
+    
     # 簡化的單頁HTML
     simple_html = f'''<!DOCTYPE html>
 <html lang="zh-TW">
@@ -154,16 +157,70 @@ def create_simple_single_page(public_dir, summary_data):
                 </div>
                 <div class="metric-card">
                     <div class="metric-value">{best_accuracy:.3f}</div>
-                    <div class="metric-label">準確率 / Accuracy</div>
+                    <div class="metric-label">最佳準確率 / Best Accuracy</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-value">{best_f1_score:.3f}</div>
-                    <div class="metric-label">F1分數 / F1 Score</div>
+                    <div class="metric-label">最佳F1分數 / Best F1 Score</div>
                 </div>
             </div>
         </div>
         
         <div class="section">
+            <h3>🤖 所有模型比較 / All Models Comparison</h3>'''
+    
+    # 如果有所有模型的數據，添加表格
+    if all_models:
+        simple_html += '''
+            <div style="overflow-x: auto; margin: 15px 0;">
+                <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px;">
+                    <thead>
+                        <tr style="background: #007bff; color: white;">
+                            <th style="padding: 12px; text-align: left;">模型 / Model</th>
+                            <th style="padding: 12px; text-align: center;">準確率 / Accuracy</th>
+                            <th style="padding: 12px; text-align: center;">精確度 / Precision</th>
+                            <th style="padding: 12px; text-align: center;">召回率 / Recall</th>
+                            <th style="padding: 12px; text-align: center;">F1分數 / F1 Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>'''
+        
+        for model_name, metrics in all_models.items():
+            accuracy = metrics.get('accuracy', 0)
+            precision = metrics.get('precision', 0)
+            recall = metrics.get('recall', 0)
+            f1 = metrics.get('f1', 0)
+            
+            # 判斷是否為最佳模型
+            is_best = model_name == best_model_name
+            row_style = 'background: #e7f3ff; font-weight: bold;' if is_best else 'background: #f8f9fa;'
+            
+            simple_html += f'''
+                        <tr style="{row_style}">
+                            <td style="padding: 12px; border-bottom: 1px solid #ddd;">{model_name} {"🏆" if is_best else ""}</td>
+                            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">{accuracy:.3f}</td>
+                            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">{precision:.3f}</td>
+                            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">{recall:.3f}</td>
+                            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">{f1:.3f}</td>
+                        </tr>'''
+        
+        simple_html += '''
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="section">'''
+    else:
+        simple_html += '''
+            <p style="text-align: center; color: #666; font-style: italic; background: white; padding: 15px; border-radius: 5px;">
+                模型結果將在分析完成後顯示 / Model results will be displayed after analysis completion
+            </p>
+        </div>
+        
+        <div class="section">'''
+    
+    simple_html += '''
             <h3>🚀 自動化流程展示 / Automation Pipeline</h3>
             <p><strong>這個頁面展示了完整的 Python 自動化流程：</strong></p>
             <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">

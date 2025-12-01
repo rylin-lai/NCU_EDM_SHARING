@@ -335,6 +335,7 @@ class MLReportGenerator:
             'generated_at': datetime.now().isoformat(),
             'dataset_info': self.results.get('data_info', {}),
             'best_classification_model': self._get_best_classification_model(),
+            'all_classification_models': self.results.get('classification', {}),
             'clustering_summary': self.results.get('clustering', {}),
             'report_path': str(report_path.name),
             'plots': [plot_name for plot_name, _ in self.plots]
