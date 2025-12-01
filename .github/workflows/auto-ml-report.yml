@@ -397,7 +397,7 @@ jobs:
       continue-on-error: true
       
     - name: 📤 Upload Pages Artifact
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v4
       with:
         path: auto_ml_demo/public/
         
@@ -442,6 +442,26 @@ jobs:
     - name: 🎉 Success Notification
       if: needs.deploy-to-pages.result == 'success'
       run: |
+        DEPLOYMENT_PATH="${{ needs.setup-deployment-info.outputs.deployment-path }}"
+        BASE_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+        
+        if [ -n "$DEPLOYMENT_PATH" ]; then
+          FULL_URL="${BASE_URL}/${DEPLOYMENT_PATH}/"
+        else
+          FULL_URL="${BASE_URL}/"
+        fi
+        
         echo "🎉 ML Analysis Pipeline completed successfully!"
-        echo "📊 Report available at GitHub Pages"
+        echo "📊 Report URL: $FULL_URL"
+        echo "📊 Branch: ${{ needs.setup-deployment-info.outputs.branch-name }}"
         echo "🤖 Perfect demonstration of Python enterprise automation!"
+        
+        # Add to job summary
+        echo "## 🎉 Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Access Your ML Report:" >> $GITHUB_STEP_SUMMARY
+        echo "**🔗 [Click here to view the report]($FULL_URL)**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch**: ${{ needs.setup-deployment-info.outputs.branch-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployment Path**: $DEPLOYMENT_PATH" >> $GITHUB_STEP_SUMMARY
+        echo "- **Direct URL**: [$FULL_URL]($FULL_URL)" >> $GITHUB_STEP_SUMMARY
