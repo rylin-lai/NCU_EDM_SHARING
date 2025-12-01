@@ -11,12 +11,9 @@ These are true unit tests that only test Python module functionality, no externa
 """
 
 import pytest
-import json
 import sys
 import os
-from pathlib import Path
 from unittest.mock import patch, mock_open
-from io import StringIO
 
 # 確保可以 import string_reverser
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

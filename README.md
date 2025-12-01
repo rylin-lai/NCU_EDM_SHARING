@@ -19,23 +19,77 @@ workshop_materials/
 │   ├── create_pages_structure.py
 │   └── requirements.txt
 │
-├── 🧪 跨語言測試展示 / Cross-Language Testing
-│   ├── string_reverser.py    # Python版本字串反轉器
-│   ├── test_string_reverser.py # pytest測試檔案
-│   └── golang/               # Golang版本實作
+├── 🔍 TLSH 相似度分析 / TLSH Similarity Analysis
+│   ├── pylib/tlsh_analyzer.py    # TLSH 主要分析工具
+│   ├── pylib/tlsh_lib.py         # TLSH 核心函式庫
+│   ├── pylib/hac_lib.py          # 階層式分群函式庫
+│   ├── tlsh_basic_tutorial.ipynb # TLSH 基礎教學
+│   ├── tlsh_db_scan.ipynb        # DBSCAN 分群教學
+│   └── data/                     # 測試資料集
+│       ├── malicious_phish.csv
+│       ├── mb_10K.csv
+│       └── mb_1K.csv
+│
+├── 🧪 跨語言開發展示 / Cross-Language Development
+│   ├── string_reverser.py         # Python版本字串反轉器
+│   ├── test_string_reverser.py    # 整合測試檔案
+│   ├── test_string_reverser_unit.py # 單元測試檔案
+│   └── golang/main.go             # Golang版本實作
 │
 ├── 🔄 GitHub Actions CI/CD
-│   └── .github/workflows/    # 自動化部署設定
+│   └── .github/workflows/        # 自動化部署設定
 │
-└── 📊 資料分析相關
-    └── data/                 # 測試資料集
+└── 📊 Jupyter Notebooks
+    ├── tlsh_basic_tutorial.ipynb  # TLSH基礎教學
+    └── tlsh_db_scan.ipynb         # DBSCAN分群實作
 ```
 
 ---
 
 ## 🚀 功能展示 / Features
 
-### 1. 🤖 自動化ML分析系統
+### 1. 🔍 TLSH 相似度分析系統
+
+**TLSH (Trend Locality Sensitive Hashing)** - 企業級資料外洩檢測和文件相似度分析
+
+#### 核心功能:
+- **文件相似度比較**: 檢測資料外洩或重複文件
+- **DBSCAN 分群分析**: 自動發現相似文件群集
+- **惡意軟體檢測**: 基於行為模式的檢測
+- **大規模資料處理**: 支援10K+文件的高效分析
+
+#### 🔧 使用方式:
+```bash
+# 比較兩個文件的相似度
+python pylib/tlsh_analyzer.py --case1 --text1 "原始文件內容" --text2 "可能洩漏的文件"
+
+# 對資料集進行DBSCAN分群
+python pylib/tlsh_analyzer.py --case2 --csv data/malicious_phish.csv --eps 50
+
+# 互動式教學 (推薦!)
+jupyter notebook tlsh_basic_tutorial.ipynb
+```
+
+### 2. 🧪 跨語言開發工作流程
+
+展示現代軟體開發的完整流程：**Python POC → Golang Production → Python Testing**
+
+#### 🐍 Python 原型開發:
+- **`string_reverser.py`**: 快速原型實作
+- 完整功能驗證和API設計
+- JSON輸出格式定義
+
+#### 🚀 Golang 生產版本:
+- **`golang/main.go`**: 高效能生產實作
+- 相同的API和輸出格式
+- 適合高並發環境
+
+#### 🧪 自動化測試策略:
+- **Unit Tests** (`test_string_reverser_unit.py`): 純Python模組測試（快速、隔離）
+- **Integration Tests** (`test_string_reverser.py`): Python與Golang跨語言一致性測試
+- 測試覆蓋率報告和效能測試
+
+### 3. 🤖 自動化ML分析系統
 
 每當推送到分支時，會自動：
 - 生成教育資料集
@@ -47,16 +101,7 @@ workshop_materials/
 - **主頁面**: https://rylin-lai.github.io/NCU_EDM_SHARING/
 - **分支報告**: https://rylin-lai.github.io/NCU_EDM_SHARING/branch-{分支名稱}/
 
-### 2. 🧪 自動化測試展示
-
-展示完整的測試策略，包括：
-- **Unit Tests**: 純Python模組測試（快速、隔離）
-- **Integration Tests**: Python與Golang跨語言測試
-- 測試資料一致性檢查
-- 邊界條件與效能測試
-- 專業的測試結構設計
-
-### 3. 🔄 CI/CD自動化流程
+### 4. 🔄 CI/CD自動化流程
 
 - 每次推送自動觸發分析
 - 多分支獨立部署
@@ -75,20 +120,81 @@ workshop_materials/
    cd NCU_EDM_SHARING
    ```
 
-2. **安裝Python依賴**:
+2. **安裝依賴**:
    ```bash
-   cd auto_ml_demo
-   pip install -r requirements.txt
+   # Python 依賴
+   pip install -r auto_ml_demo/requirements.txt
+   pip install tlsh pandas numpy scikit-learn matplotlib seaborn jupyter
+   
+   # Golang 依賴 (可選)
+   cd golang && go mod tidy
    ```
 
-3. **手動執行ML分析**:
-   ```bash
-   # 生成資料集
-   python educational_dataset_generator.py --students 300 --output data/
-   
-   # 執行ML分析
-   python ml_report_generator.py --data data/educational_data_2024_Fall.csv --output reports/
-   ```
+### 🔍 TLSH 相似度分析
+
+#### 情境1: 資料外洩檢測
+```bash
+# 比較兩個文件是否相似 (適用於資料外洩調查)
+python pylib/tlsh_analyzer.py --case1 \
+  --text1 "這是原始的機密文件內容..." \
+  --text2 "這是可能洩漏的文件內容..."
+
+# 從檔案比較
+python pylib/tlsh_analyzer.py --case1 \
+  --file1 data/original.txt \
+  --file2 data/suspicious.txt
+```
+
+#### 情境2: 惡意軟體分群分析
+```bash
+# 對惡意軟體資料集進行DBSCAN分群
+python pylib/tlsh_analyzer.py --case2 \
+  --csv data/malicious_phish.csv \
+  --eps 50 --min_samples 3
+
+# 使用較小的資料集測試
+python pylib/tlsh_analyzer.py --case2 \
+  --csv data/mb_1K.csv \
+  --eps 30 --min_samples 2
+```
+
+#### 📚 互動式教學
+```bash
+# 啟動 Jupyter 教學筆記本
+jupyter notebook tlsh_basic_tutorial.ipynb
+
+# DBSCAN 分群教學
+jupyter notebook tlsh_db_scan.ipynb
+```
+
+### 🧪 跨語言開發測試
+
+#### String Reverser 範例
+```bash
+# Python 版本
+python string_reverser.py --text "Hello World" --example
+
+# 建置 Golang 版本
+cd golang
+go build -o string-reverser
+./string-reverser -text "Hello World" -example
+
+# 執行跨語言測試
+pytest test_string_reverser.py -v
+pytest test_string_reverser_unit.py -v --cov=string_reverser
+```
+
+### 🤖 自動化ML分析
+
+```bash
+cd auto_ml_demo
+
+# 生成教育資料集
+python educational_dataset_generator.py --students 300 --output data/
+
+# 執行ML分析
+python ml_report_generator.py --data data/educational_data_2024_Fall.csv --output reports/
+```
 
 ---
 
@@ -190,29 +296,43 @@ test_string_reverser.py::TestStringReverser::test_both_implementations_empty_str
 
 ## 🎯 教學重點 / Learning Points
 
-### 1. **Python 自動化技能**
+### 1. **資訊安全與TLSH應用**
+- 雜湊演算法在資安的應用 (TLSH vs MD5/SHA)
+- 資料外洩檢測實務
+- 惡意軟體分析與分群
+- 大規模文件相似度計算
+- DBSCAN無監督學習在資安的應用
+
+### 2. **跨語言開發策略**
+- Python原型開發 (快速驗證想法)
+- Golang生產環境部署 (高效能需求)
+- API一致性設計
+- 跨語言測試自動化
+
+### 3. **Python 全端自動化技能**
 - 資料科學工作流程 (pandas, scikit-learn, matplotlib)
-- 自動化腳本開發
-- HTML報告生成
-- JSON資料處理
+- 網路安全工具開發 (TLSH, 檔案分析)
+- 自動化腳本與報告生成
+- JSON資料處理與API設計
 
-### 2. **測試驅動開發 (TDD)**
-- pytest框架使用
+### 4. **現代測試策略**
+- pytest框架專業使用
+- 測試金字塔 (Unit → Integration → E2E)
 - 跨語言測試策略
-- 測試資料管理
-- 持續整合測試
+- 測試覆蓋率與效能測試
+- CI/CD中的測試自動化
 
-### 3. **DevOps 實務**
-- GitHub Actions設定
-- CI/CD pipeline設計
-- 自動化部署
-- 多分支管理
+### 5. **DevOps 與自動化**
+- GitHub Actions進階應用
+- 多分支CI/CD pipeline
+- 自動化部署與報告生成
+- 測試結果可視化
 
-### 4. **軟體工程最佳實務**
-- 程式碼組織結構
-- 文檔撰寫
-- 版本控制
+### 6. **軟體工程最佳實務**
+- 模組化程式設計
 - 跨平台相容性
+- 技術文檔撰寫
+- 版本控制與協作開發
 
 ---
 
