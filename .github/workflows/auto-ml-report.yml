@@ -219,10 +219,12 @@ jobs:
         git checkout gh-pages
         
         if [ ! -f "index.html" ]; then
+          # Only clean if it's a completely new gh-pages branch
           git rm -rf . 2>/dev/null || true
           echo "📄 Created new gh-pages branch"
         else
-          echo "📄 Using existing gh-pages branch"
+          echo "📄 Using existing gh-pages branch with existing content"
+          # Don't clean existing files - we want to keep other branch directories
         fi
         
     - name: 🚀 Deploy Files to Target Directory
@@ -248,6 +250,10 @@ jobs:
         # Create target directory
         mkdir -p "${TARGET_DIR}"
         
+        # Show existing content before deployment
+        echo "📂 Current gh-pages content:"
+        ls -la . || echo "Empty directory"
+        
         # Copy the prepared files from /tmp to target directory
         if [ -f "/tmp/deployment-files/index.html" ]; then
           cp /tmp/deployment-files/index.html "${TARGET_DIR}/"
@@ -257,9 +263,13 @@ jobs:
           echo "<h1>🤖 Python ML Demo - ${BRANCH_NAME}</h1><p>Report deployment in progress...</p>" > "${TARGET_DIR}/index.html"
         fi
         
-        # List what we deployed
-        echo "📁 Deployed files:"
+        # Show what we deployed
+        echo "📁 Deployed files for ${BRANCH_NAME}:"
         ls -la "${TARGET_DIR}/"
+        
+        # Show all content after deployment
+        echo "📂 All gh-pages content after deployment:"
+        ls -la .
         
     - name: 📤 Commit and Push to gh-pages
       run: |
