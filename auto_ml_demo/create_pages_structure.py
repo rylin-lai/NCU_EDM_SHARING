@@ -136,8 +136,8 @@ def create_simple_single_page(public_dir, summary_data):
             <h2>Automated Machine Learning Pipeline Demo</h2>
             <span class="status-badge">✅ 部署成功 / Deployment Success</span>
             <p style="margin-top: 15px; color: #666;">
-                展示 Python 在企業環境中的自動化機器學習應用<br>
-                Demonstrating Python's automated ML applications in enterprise environments
+                展示 Python 自動化機器學習流程<br>
+                Demonstrating Python automated ML workflow
             </p>
         </div>
         
@@ -176,15 +176,15 @@ def create_simple_single_page(public_dir, summary_data):
         </div>
         
         <div class="section">
-            <h3>💼 企業級Python應用 / Enterprise Python Applications</h3>
+            <h3>🐍 Python 技能展示 / Python Skills Demo</h3>
             <div style="background: white; padding: 15px; border-radius: 5px;">
-                <p><strong>這個系統展示了軟體工程師日常使用的Python技能：</strong></p>
+                <p><strong>這個系統展示了常用的Python技術：</strong></p>
                 <ul style="margin: 10px 0; padding-left: 20px;">
-                    <li>📈 <strong>數據科學</strong>：scikit-learn, pandas, matplotlib</li>
-                    <li>🔄 <strong>自動化</strong>：CI/CD pipeline, GitHub Actions</li>
-                    <li>🌐 <strong>網頁部署</strong>：GitHub Pages, 靜態網站生成</li>
-                    <li>📊 <strong>報表系統</strong>：自動化HTML/PDF報表生成</li>
-                    <li>🧪 <strong>測試與品質</strong>：自動化測試, 程式碼檢查</li>
+                    <li>📈 <strong>數據分析</strong>：scikit-learn, pandas, matplotlib</li>
+                    <li>🔄 <strong>自動化部署</strong>：GitHub Actions workflow</li>
+                    <li>🌐 <strong>網頁生成</strong>：HTML報表自動產生</li>
+                    <li>📊 <strong>機器學習</strong>：分類與分群模型比較</li>
+                    <li>🚀 <strong>CI/CD流程</strong>：推送即部署</li>
                 </ul>
             </div>
         </div>
@@ -204,10 +204,10 @@ def create_simple_single_page(public_dir, summary_data):
         </div>
         
         <div class="footer">
-            <p><strong>🎓 Python Enterprise Workshop Demo</strong></p>
+            <p><strong>🎓 Python Workshop Demo</strong></p>
             <p style="font-size: 14px; color: #888;">
                 生成時間 / Generated: {generation_time[:19].replace('T', ' ')}<br>
-                展示如何用Python建立企業級自動化系統
+                展示如何用Python建立自動化ML系統
             </p>
         </div>
     </div>
