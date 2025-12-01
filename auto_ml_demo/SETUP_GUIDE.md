@@ -3,7 +3,7 @@
 ## ⚠️ 重要：首次設置步驟 (必須手動完成)
 
 GitHub Pages 需要手動啟用才能使用 GitHub Actions 自動部署。
-
+###
 ## 📋 必要設置清單 / Required Setup Checklist
 
 ### 1. 🔧 手動啟用 GitHub Pages / Manually Enable GitHub Pages
