@@ -40,21 +40,23 @@ auto_ml_demo/
 
 ## 🚀 多分支部署功能 / Multi-Branch Deployment
 
-✨ **每個學生都可以有自己的ML分析報表！**
+✨ **每個人都可以有自己的ML分析報表！**
 
 - **主分支**: 部署到根路徑 `https://username.github.io/repo/`
 - **PR**: 部署到 `https://username.github.io/repo/pr-123/`
-- **學生分支**: 部署到 `https://username.github.io/repo/branch-student1/`
+- **個人分支**: 部署到 `https://username.github.io/repo/branch-yourname/`
 
 📖 **詳細說明**: 請參閱 [MULTI_BRANCH_DEPLOYMENT.md](./MULTI_BRANCH_DEPLOYMENT.md)
 
+⚠️ **首次使用**: 請先完成 [SETUP_GUIDE.md](./SETUP_GUIDE.md) 中的GitHub Pages配置
+
 ## 🚀 使用方法 / Usage
 
-### 學生快速開始 / Quick Start for Students
+### 快速開始 / Quick Start
 
-1. **創建自己的分支 / Create your branch**
+1. **創建個人分支 / Create your branch**
 ```bash
-git checkout -b student-your-name
+git checkout -b yourname-analysis
 ```
 
 2. **可選：調整參數 / Optional: Adjust parameters**
@@ -66,12 +68,12 @@ git checkout -b student-your-name
 3. **推送觸發部署 / Push to trigger deployment**
 ```bash
 git add .
-git commit -m "Your name's ML analysis"
-git push origin student-your-name
+git commit -m "Add my ML analysis experiment"
+git push origin yourname-analysis
 ```
 
 4. **查看結果 / View results**
-- 訪問 `https://username.github.io/repository/branch-student-your-name/`
+- 訪問 `https://username.github.io/repository/branch-yourname-analysis/`
 - 或在主頁面 `https://username.github.io/repository/` 找到你的部署
 
 ### 本地執行 / Local Execution
@@ -124,31 +126,17 @@ git push
 - 🎯 **每個人都有專屬的ML報表**，增強學習動機
 - 學習 Git 分支管理和協作開發
 
-### 對講師來說 / For Instructors
-- 完美的 2.5 小時工作坊內容
-- 結合理論和實務的教學案例
-- 展示 Python 在企業 DevOps 中的角色
-- 📊 **即時監控所有學生進度**，透過總覽頁面
-- 🔄 **支援多人同時實作**，不會互相干擾
+### 協作學習 / Collaborative Learning
+- 支援團隊協作和個人實作
+- 每個參與者都有獨立的分析結果
+- 透過版本控制學習現代開發流程
+- 視覺化結果便於分享和討論
 
-### 課堂建議 / Classroom Recommendations
-
-#### 🕐 **時間分配 (2.5小時)**
-1. **理論介紹** (30分鐘): GitHub Actions + Python自動化概念
-2. **Demo展示** (20分鐘): 展示完整工作流程
-3. **學生實作** (80分鐘): 每個人創建自己的分支和部署
-4. **結果分享** (30分鐘): 檢視和比較大家的結果
-5. **Q&A討論** (10分鐘): 問題解答和延伸討論
-
-#### 👥 **建議班級大小**
-- **理想**: 10-20人
-- **最大**: 30人 (超過需要考慮repository性能)
-
-#### 📋 **課前準備清單**
-- [ ] 學生都有 GitHub 帳號
-- [ ] 講師已設定好主 repository
-- [ ] 啟用 GitHub Pages
-- [ ] 測試完整工作流程
+### 學習成果 / Learning Outcomes
+- 熟悉 Git 分支管理和協作開發
+- 理解 CI/CD 自動化概念和實際應用  
+- 掌握從資料科學到生產部署的完整流程
+- 體驗企業級 Python 開發最佳實務
 
 ## 🛠️ 技術堆疊 / Tech Stack
 
