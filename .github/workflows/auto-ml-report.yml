@@ -36,22 +36,18 @@ jobs:
     - name: 🔍 Determine Deployment Path
       id: path-info
       run: |
-        # 確定部署路徑和分支資訊
         if [ "${{ github.event_name }}" = "pull_request" ]; then
-          # PR 部署到 pr-{number} 路徑
           PR_NUMBER="${{ github.event.pull_request.number }}"
           DEPLOYMENT_PATH="pr-${PR_NUMBER}"
           BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
           IS_MAIN_BRANCH="false"
           echo "pr-number=${PR_NUMBER}" >> $GITHUB_OUTPUT
         elif [ "${{ github.ref_name }}" = "main" ] || [ "${{ github.ref_name }}" = "master" ]; then
-          # main/master 分支部署到根路徑
           DEPLOYMENT_PATH=""
           BRANCH_NAME="${{ github.ref_name }}"
           IS_MAIN_BRANCH="true"
           echo "pr-number=" >> $GITHUB_OUTPUT
         else
-          # 其他分支部署到 branch-{name} 路徑
           BRANCH_NAME="${{ github.ref_name }}"
           DEPLOYMENT_PATH="branch-${BRANCH_NAME}"
           IS_MAIN_BRANCH="false"
@@ -171,13 +167,13 @@ jobs:
         retention-days: 30
 
   deploy-to-pages:
-    name: 🚀 Deploy to GitHub Pages (Multi-Branch)
+    name: 🚀 Deploy to GitHub Pages
     needs: [setup-deployment-info, generate-dataset, run-ml-analysis]
     runs-on: ubuntu-latest
     if: success()
     
     permissions:
-      contents: write  # Need write permission to push to gh-pages
+      contents: write
       pages: write
       id-token: write
       actions: read
@@ -194,18 +190,16 @@ jobs:
         name: ml-analysis-reports
         path: reports/
         
-    - name: 🐍 Set up Python for Pages Structure
+    - name: 🐍 Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
         
     - name: 📥 Checkout/Create gh-pages branch
       run: |
-        # Try to checkout existing gh-pages branch, or create new one
         git fetch origin gh-pages:gh-pages 2>/dev/null || git checkout --orphan gh-pages
         git checkout gh-pages
         
-        # If it's a new branch, clean it
         if [ ! -f "index.html" ]; then
           git rm -rf . 2>/dev/null || true
           echo "📄 Created new gh-pages branch"
@@ -213,7 +207,7 @@ jobs:
           echo "📄 Using existing gh-pages branch"
         fi
         
-    - name: 🏗️ Deploy Branch Reports to Sub-Directory
+    - name: 🏗️ Create Simple HTML Report
       env:
         DEPLOYMENT_PATH: ${{ needs.setup-deployment-info.outputs.deployment-path }}
         BRANCH_NAME: ${{ needs.setup-deployment-info.outputs.branch-name }}
@@ -236,28 +230,16 @@ jobs:
         # Create target directory
         mkdir -p "${TARGET_DIR}"
         
-        # List what we have available
-        echo "📂 Current directory contents:"
-        ls -la
-        echo "📂 Reports directory:"
-        ls -la reports/ || echo "No reports directory"
+        # Create simple HTML report file
+        REPORT_FILE="${TARGET_DIR}/index.html"
         
-        # Create simple HTML report
-        if [ "${IS_MAIN_BRANCH}" = "true" ]; then
-          REPORT_FILE="index.html"
-        else
-          mkdir -p "branch-${BRANCH_NAME}"
-          REPORT_FILE="branch-${BRANCH_NAME}/index.html"
-        fi
-        
-        # Create basic HTML report
-        cat > "${REPORT_FILE}" << 'HTML_EOF'
+        cat > "${REPORT_FILE}" << 'EOF'
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 Python ML 自動化展示</title>
+    <title>Python ML Demo</title>
     <style>
         body { 
             font-family: 'Segoe UI', sans-serif; 
@@ -286,7 +268,11 @@ jobs:
         <div class="header">
             <h1>🤖 Python ML Demo</h1>
             <span class="status-badge">✅ 部署成功</span>
-            <p>Branch: ${BRANCH_NAME}</p>
+EOF
+        
+        echo "            <p>Branch: ${BRANCH_NAME}</p>" >> "${REPORT_FILE}"
+        
+        cat >> "${REPORT_FILE}" << 'EOF'
         </div>
         <div style="text-align: center; padding: 20px;">
             <p>ML 分析報告已成功部署！</p>
@@ -295,133 +281,9 @@ jobs:
     </div>
 </body>
 </html>
-HTML_EOF
+EOF
         
-        echo "✅ Created simple HTML report: ${REPORT_FILE}"
-        
-        # Update deployments registry
-        python - << 'EOF'
-        import os
-        import json
-        import datetime
-        from pathlib import Path
-        
-        deployment_path = os.environ.get('DEPLOYMENT_PATH', '')
-        branch_name = os.environ.get('BRANCH_NAME', 'unknown')
-        is_main_branch = os.environ.get('IS_MAIN_BRANCH') == 'true'
-        pr_number = os.environ.get('PR_NUMBER', '')
-        repo_name = os.environ.get('GITHUB_REPOSITORY', '').split('/')[-1]
-        actor = os.environ.get('GITHUB_ACTOR', 'unknown')
-        
-        # Read existing deployments
-        deployments_file = Path('deployments.json')
-        deployments = {}
-        if deployments_file.exists():
-            try:
-                with open(deployments_file, 'r') as f:
-                    deployments = json.load(f)
-            except:
-                deployments = {}
-        
-        # Update deployment info
-        target_dir = "." if is_main_branch else f"branch-{branch_name}"
-        deployment_info = {
-            'branch': branch_name,
-            'target_dir': target_dir,
-            'is_main': is_main_branch,
-            'pr_number': pr_number if pr_number else None,
-            'actor': actor,
-            'timestamp': datetime.datetime.now().isoformat(),
-            'url': f"./{target_dir}/" if not is_main_branch else "./"
-        }
-        
-        deployment_key = branch_name
-        deployments[deployment_key] = deployment_info
-        
-        # Save deployments
-        with open(deployments_file, 'w') as f:
-            json.dump(deployments, f, indent=2)
-        
-        # Create main index if main branch
-        if is_main_branch:
-            main_index_html = f'''<!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>🎓 ML Workshop - All Branch Reports</title>
-            <style>
-                body {{ 
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                    margin: 0; padding: 20px; 
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    min-height: 100vh;
-                }}
-                .container {{ 
-                    max-width: 1200px; margin: 0 auto; 
-                    background: white; border-radius: 15px; 
-                    padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                }}
-                .header {{ 
-                    text-align: center; margin-bottom: 40px; 
-                    padding: 20px; background: #f8f9fa; border-radius: 10px;
-                }}
-                .branches-grid {{ 
-                    display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
-                    gap: 20px; margin: 30px 0; 
-                }}
-                .branch-card {{ 
-                    background: white; padding: 20px; border-radius: 10px; 
-                    border: 2px solid #e9ecef; transition: all 0.3s ease;
-                }}
-                .branch-card:hover {{ transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }}
-                .branch-card.main {{ border-left: 4px solid #28a745; }}
-                .branch-card.branch {{ border-left: 4px solid #17a2b8; }}
-                .branch-title {{ font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #495057; }}
-                .branch-info {{ font-size: 14px; color: #6c757d; margin: 5px 0; }}
-                .branch-link {{ 
-                    display: inline-block; padding: 10px 20px; background: #007bff; 
-                    color: white; text-decoration: none; border-radius: 6px; 
-                    margin-top: 15px; transition: background 0.3s ease;
-                }}
-                .branch-link:hover {{ background: #0056b3; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🎓 ML Workshop - Branch Reports</h1>
-                    <p>Each branch has its own ML analysis report</p>
-                </div>
-                <div class="branches-grid">'''
-            
-            for branch, info in sorted(deployments.items()):
-                card_class = "main" if info['is_main'] else "branch"
-                title = f"🏠 Main Branch" if info['is_main'] else f"🌿 Branch: {branch}"
-                
-                main_index_html += f'''
-                    <div class="branch-card {card_class}">
-                        <div class="branch-title">{title}</div>
-                        <div class="branch-info">👤 Author: {info['actor']}</div>
-                        <div class="branch-info">🕒 Updated: {info['timestamp'][:19].replace('T', ' ')}</div>
-                        <a href="{info['url']}" class="branch-link">View Report →</a>
-                    </div>'''
-            
-            main_index_html += f'''
-                </div>
-                <div style="text-align: center; margin-top: 30px; color: #666;">
-                    Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}<br>
-                    Total branches: {len(deployments)}
-                </div>
-            </div>
-        </body>
-        </html>'''
-            
-            with open('index.html', 'w', encoding='utf-8') as f:
-                f.write(main_index_html)
-        
-        print(f"✅ Deployed branch {branch_name} to {target_dir}")
-        EOF
+        echo "✅ Created HTML report: ${REPORT_FILE}"
         
     - name: 📤 Commit and Push to gh-pages
       run: |
@@ -444,30 +306,6 @@ HTML_EOF
     if: always()
     
     steps:
-    - name: 📊 Create Summary Report
-      run: |
-        echo "## 🤖 Automated ML Analysis Completion Report" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📊 Execution Summary" >> $GITHUB_STEP_SUMMARY
-        echo "- **Dataset Generation**: ${{ needs.generate-dataset.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **ML Analysis**: ${{ needs.run-ml-analysis.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Pages Deployment**: ${{ needs.deploy-to-pages.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🎯 Key Features Demonstrated" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Automated dataset generation" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Multi-model ML analysis pipeline" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Automated report generation" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ GitHub Pages deployment" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Cross-platform CI/CD automation" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📚 Educational Value" >> $GITHUB_STEP_SUMMARY
-        echo "This workflow demonstrates enterprise Python automation:" >> $GITHUB_STEP_SUMMARY
-        echo "1. **Data Generation**: Synthetic educational datasets" >> $GITHUB_STEP_SUMMARY
-        echo "2. **ML Pipeline**: scikit-learn classification & clustering" >> $GITHUB_STEP_SUMMARY
-        echo "3. **Visualization**: matplotlib & seaborn charts" >> $GITHUB_STEP_SUMMARY
-        echo "4. **Reporting**: Automated HTML report generation" >> $GITHUB_STEP_SUMMARY
-        echo "5. **Deployment**: GitHub Actions + GitHub Pages integration" >> $GITHUB_STEP_SUMMARY
-
     - name: 🎉 Success Notification
       if: needs.deploy-to-pages.result == 'success'
       run: |
@@ -483,9 +321,7 @@ HTML_EOF
         echo "🎉 ML Analysis Pipeline completed successfully!"
         echo "📊 Report URL: $FULL_URL"
         echo "📊 Branch: ${{ needs.setup-deployment-info.outputs.branch-name }}"
-        echo "🤖 Perfect demonstration of Python enterprise automation!"
         
-        # Add to job summary
         echo "## 🎉 Deployment Complete!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📊 Access Your ML Report:" >> $GITHUB_STEP_SUMMARY
