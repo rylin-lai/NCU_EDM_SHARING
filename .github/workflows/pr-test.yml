@@ -59,15 +59,21 @@ jobs:
         
         # 執行純 Unit Tests / Run pure Unit Tests
         echo "🧪 Running pytest unit tests"
-        python -m pytest test_string_reverser_unit.py -v \
+        
+        # 執行單元測試，失敗時中斷 CI / Run unit tests, fail CI on failure
+        if python -m pytest test_string_reverser_unit.py -v \
           --tb=short --durations=10 \
           --cov=string_reverser \
           --cov-report=html:unit-test-coverage \
           --cov-report=xml:unit-test-coverage.xml \
           --junitxml=unit-test-results.xml \
-          --html=unit-test-report.html --self-contained-html || echo "Unit tests completed with some failures"
-        
-        echo "✅ Unit tests completed"
+          --html=unit-test-report.html --self-contained-html; then
+          echo "✅ All unit tests passed"
+        else
+          echo "❌ Unit tests failed - CI will be marked as failed"
+          echo "::error::Unit tests failed. Code quality gate not met."
+          exit 1
+        fi
     
     # ========================================
     # Integration Tests - 跨語言測試 / Integration Tests - Cross-Language Testing
@@ -112,15 +118,27 @@ jobs:
         
         # 測試 Python 腳本是否能執行 / Test if Python script can run
         echo "🧪 Testing Python script execution"
-        python string_reverser.py --help || echo "Python script failed to run"
+        if python string_reverser.py --help; then
+          echo "✅ Python script can execute properly"
+        else
+          echo "❌ Python script execution failed"
+          echo "::error::Python script cannot run properly. Basic functionality test failed."
+          exit 1
+        fi
         
         # 執行跨平台測試 / Run cross-platform tests
         echo "🚀 Running pytest cross-platform tests"
-        python -m pytest test_string_reverser.py -v --tb=short --durations=5 \
-          --junitxml=test-results-string-reverser.xml \
-          --html=test-report-string-reverser.html --self-contained-html
         
-        echo "✅ String reverser tests completed"
+        # 執行整合測試，失敗時中斷 CI / Run integration tests, fail CI on failure
+        if python -m pytest test_string_reverser.py -v --tb=short --durations=5 \
+          --junitxml=test-results-string-reverser.xml \
+          --html=test-report-string-reverser.html --self-contained-html; then
+          echo "✅ All integration tests passed"
+        else
+          echo "❌ Integration tests failed - CI will be marked as failed"
+          echo "::error::Integration tests failed. Cross-platform compatibility issue detected."
+          exit 1
+        fi
         
     # ========================================
     # 上傳測試結果 / Upload Test Results  

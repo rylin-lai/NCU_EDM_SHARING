@@ -120,8 +120,8 @@ class TestStringReverserUnit:
         assert result["total"] == 15
         assert result["alphabets"] == 10  # H,e,l,l,o,W,o,r,l,d
         assert result["digits"] == 3      # 1,2,3
-        assert result["spaces"] == 1      # one space
-        assert result["others"] == 1      # assuming no other special chars counted differently
+        assert result["spaces"] == 2      # Two spaces: "Hello World 123"
+        assert result["others"] == 0      # No other special chars in this string
     
     def test_count_characters_empty(self):
         """測試空字串的字符計數 / Test character counting with empty string"""
@@ -137,7 +137,7 @@ class TestStringReverserUnit:
         """測試Unicode字符計數 / Test character counting with Unicode"""
         result = string_reverser.count_characters("Python🐍中文123")
         
-        assert result["total"] == 11
+        assert result["total"] == 12  # P,y,t,h,o,n,🐍,中,文,1,2,3
         assert result["digits"] == 3  # 1,2,3
         # Note: The exact counts depend on implementation
         assert result["total"] > 0
