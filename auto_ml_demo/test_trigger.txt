@@ -1,0 +1,7 @@
+Test trigger for auto-ml workflow
+測試觸發 auto-ml workflow
+
+This file is used to test the auto-ml workflow trigger.
+這個檔案用來測試 auto-ml workflow 的觸發。
+
+Timestamp: 2025-12-02
