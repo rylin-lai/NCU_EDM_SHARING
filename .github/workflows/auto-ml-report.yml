@@ -236,17 +236,188 @@ jobs:
         # Create target directory
         mkdir -p "${TARGET_DIR}"
         
-        # Copy reports to target directory  
-        cd auto_ml_demo
-        python create_pages_structure.py
-        cd ..
+        # List what we have available
+        echo "📂 Current directory contents:"
+        ls -la
+        echo "📂 Reports directory:"
+        ls -la reports/ || echo "No reports directory"
         
-        # Copy generated reports
-        if [ "${IS_MAIN_BRANCH}" = "true" ]; then
-          cp -r auto_ml_demo/public/* .
-        else
-          cp -r auto_ml_demo/public/* "${TARGET_DIR}/"
-        fi
+        # Create simple HTML directly using downloaded reports
+        python - << 'CREATE_HTML_EOF'
+import os
+import json
+from datetime import datetime
+from pathlib import Path
+
+# Get environment variables
+branch_name = os.environ.get('BRANCH_NAME', 'unknown')
+is_main_branch = os.environ.get('IS_MAIN_BRANCH') == 'true'
+target_dir = "." if is_main_branch else f"branch-{branch_name}"
+
+# Try to load analysis summary
+summary_data = {}
+summary_path = Path("reports/analysis_summary.json")
+if summary_path.exists():
+    try:
+        with open(summary_path, 'r', encoding='utf-8') as f:
+            summary_data = json.load(f)
+        print(f"📊 Loaded analysis summary from {summary_path}")
+    except Exception as e:
+        print(f"⚠️ Could not load summary: {e}")
+else:
+    print("⚠️ No analysis summary found, creating placeholder")
+
+# Extract key data
+dataset_info = summary_data.get('dataset_info', {})
+best_model = summary_data.get('best_classification_model', {})
+generation_time = summary_data.get('generated_at', datetime.now().isoformat())
+
+# Format data
+dataset_shape = dataset_info.get('shape', 'Unknown')
+best_model_name = best_model.get('name', 'Unknown') if best_model else 'Unknown'
+best_f1_score = best_model.get('f1_score', 0) if best_model else 0
+best_accuracy = best_model.get('accuracy', 0) if best_model else 0
+
+# Get all models results
+all_models = summary_data.get('all_classification_models', {})
+
+# Create HTML content
+html_content = f'''<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 Python ML 自動化展示 - {branch_name}</title>
+    <style>
+        body {{ 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; color: #333;
+        }}
+        .container {{ 
+            max-width: 1000px; margin: 0 auto; 
+            background: white; border-radius: 15px; 
+            padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }}
+        .header {{ 
+            text-align: center; margin-bottom: 30px; 
+            padding: 20px; background: #f8f9fa; border-radius: 10px;
+        }}
+        .section {{ 
+            margin: 25px 0; padding: 20px; 
+            background: #f8f9fa; border-radius: 8px; 
+            border-left: 4px solid #007bff;
+        }}
+        .metrics {{ 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; margin: 20px 0;
+        }}
+        .metric-card {{ 
+            background: white; padding: 15px; border-radius: 8px; 
+            text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }}
+        .metric-value {{ 
+            font-size: 24px; font-weight: bold; color: #007bff; 
+        }}
+        .metric-label {{ 
+            font-size: 14px; color: #666; margin-top: 5px; 
+        }}
+        .status-badge {{ 
+            display: inline-block; padding: 5px 10px; 
+            background: #28a745; color: white; border-radius: 15px; 
+            font-size: 12px; font-weight: bold;
+        }}
+        .footer {{ 
+            text-align: center; margin-top: 30px; 
+            padding: 20px; color: #666; border-top: 1px solid #eee;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Python ML Demo - {branch_name}</h1>
+            <span class="status-badge">✅ 部署成功</span>
+        </div>
+        
+        <div class="section">
+            <h3>📊 分析結果</h3>
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-value">{dataset_shape}</div>
+                    <div class="metric-label">資料集大小</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">{best_model_name}</div>
+                    <div class="metric-label">最佳模型</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">{best_accuracy:.3f}</div>
+                    <div class="metric-label">最佳準確率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">{best_f1_score:.3f}</div>
+                    <div class="metric-label">最佳F1分數</div>
+                </div>
+            </div>
+        </div>'''
+
+# Add models comparison table if available
+if all_models:
+    html_content += '''
+        <div class="section">
+            <h3>🤖 模型比較</h3>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px;">
+                    <thead>
+                        <tr style="background: #007bff; color: white;">
+                            <th style="padding: 12px; text-align: left;">模型</th>
+                            <th style="padding: 12px; text-align: center;">準確率</th>
+                            <th style="padding: 12px; text-align: center;">F1分數</th>
+                        </tr>
+                    </thead>
+                    <tbody>'''
+    
+    for model_name, metrics in all_models.items():
+        accuracy = metrics.get('accuracy', 0)
+        f1 = metrics.get('f1', 0)
+        is_best = model_name == best_model_name
+        row_style = 'background: #e7f3ff; font-weight: bold;' if is_best else 'background: #f8f9fa;'
+        
+        html_content += f'''
+                        <tr style="{row_style}">
+                            <td style="padding: 12px; border-bottom: 1px solid #ddd;">{model_name} {"🏆" if is_best else ""}</td>
+                            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">{accuracy:.3f}</td>
+                            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">{f1:.3f}</td>
+                        </tr>'''
+    
+    html_content += '''
+                    </tbody>
+                </table>
+            </div>
+        </div>'''
+
+html_content += f'''
+        <div class="footer">
+            <p><strong>🎓 Python Workshop Demo</strong></p>
+            <p>Generated: {generation_time[:19].replace('T', ' ')}</p>
+        </div>
+    </div>
+</body>
+</html>'''
+
+# Ensure target directory exists
+if target_dir != ".":
+    Path(target_dir).mkdir(exist_ok=True)
+
+# Write HTML file
+html_file = Path(target_dir) / "index.html"
+with open(html_file, 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print(f"✅ Created HTML report: {html_file}")
+CREATE_HTML_EOF
         
         # Update deployments registry
         python - << 'EOF'
