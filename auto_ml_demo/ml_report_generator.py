@@ -135,7 +135,7 @@ class MLReportGenerator:
             'Logistic Regression': LogisticRegression(max_iter=50, random_state=36),
             'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42),
             'KNN': KNeighborsClassifier(n_neighbors=5),
-            'SVM': SVC(kernel='rbf', probability=True, random_state=42)
+            'SVM': SVC(kernel='linear', probability=True, random_state=42)
         }
         
         classification_results = {}
