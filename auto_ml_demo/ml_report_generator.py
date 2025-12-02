@@ -132,7 +132,7 @@ class MLReportGenerator:
         
         # 定義模型 / Define models
         models = {
-            'Logistic Regression': LogisticRegression(max_iter=50, random_state=36),
+            'Logistic Regression': LogisticRegression(max_iter=2, random_state=36),
             'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42),
             'KNN': KNeighborsClassifier(n_neighbors=3),
             'SVM': SVC(kernel='linear', probability=True, random_state=42)
@@ -188,7 +188,7 @@ class MLReportGenerator:
         print("  🔄 K-Means clustering...")
         
         # 尋找最佳K值 / Find optimal K
-        k_range = range(2, 5)
+        k_range = range(2, 8)
         inertias = []
         silhouette_scores = []
         
