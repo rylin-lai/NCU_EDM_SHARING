@@ -188,7 +188,7 @@ class MLReportGenerator:
         print("  🔄 K-Means clustering...")
         
         # 尋找最佳K值 / Find optimal K
-        k_range = range(2, 16)
+        k_range = range(2, 8)
         inertias = []
         silhouette_scores = []
         
