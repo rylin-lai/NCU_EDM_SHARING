@@ -40,7 +40,8 @@ func (sr *StringReverser) reverseString(text string) *ReverseResult {
 	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
 		runes[i], runes[j] = runes[j], runes[i]
 	}
-	reversed := string(runes)
+	_ := string(runes)
+	reversed := text
 
 	// 檢查是否為回文 / Check if palindrome
 	normalizedOriginal := strings.ToLower(strings.ReplaceAll(text, " ", ""))
