@@ -32,7 +32,7 @@ class StringReverser:
             print(f"🔄 反轉字串: '{text}'")
             print(f"🔄 Reversing string: '{text}'")
         
-        reversed_text = text[::-1]
+        reversed_text = text
         
         result = {
             "original": text,
